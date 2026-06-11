@@ -162,9 +162,12 @@ has a native C# equivalent:
      (bool/byte/short/char/int/long/float/double/string) and
      `StringValue` varint string I/O. Deferred:
      `TypeSerializerSnapshot` schema-evolution subsystem (state
-     increment), composite serializers (List/Map/Generic arrays),
-     Value types.
-   - ⬜ next slices: composite serializers and `TypeInformation`,
+     increment), `GenericArraySerializer`, Value types.
+   - ✅ composite serializers: `ListSerializer<T>`
+     (`IList<T>`, size + elements) and `MapSerializer<TKey,TValue>`
+     (`IDictionary<K,V>`, size + entries with per-value null flags),
+     wire-compatible with Java.
+   - ⬜ next slices: `TypeInformation` and the tuple serializers,
      option catalogs (`CoreOptions`, `TaskManagerOptions`, ...) as
      their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
