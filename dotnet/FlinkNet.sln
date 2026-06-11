@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1DF200BA-382F-4152-B123-07ADECE8D5EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Annotations", "src\FlinkNet.Annotations\FlinkNet.Annotations.csproj", "{7EF1E001-8E5E-42A7-8567-F48E92B99C79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Core.Api", "src\FlinkNet.Core.Api\FlinkNet.Core.Api.csproj", "{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A85F0F10-FF02-4AE8-82F1-F5E7AA5BEB78}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Core.Api.Tests", "test\FlinkNet.Core.Api.Tests\FlinkNet.Core.Api.Tests.csproj", "{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79} = {1DF200BA-382F-4152-B123-07ADECE8D5EE}
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D} = {1DF200BA-382F-4152-B123-07ADECE8D5EE}
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C} = {A85F0F10-FF02-4AE8-82F1-F5E7AA5BEB78}
+	EndGlobalSection
+EndGlobal

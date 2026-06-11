@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>FlinkNet annotations. Port of the Apache Flink flink-annotations module.</Description>
+    <RootNamespace>FlinkNet</RootNamespace>
+  </PropertyGroup>
+
+</Project>
