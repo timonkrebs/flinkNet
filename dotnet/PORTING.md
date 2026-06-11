@@ -57,6 +57,7 @@ dotnet test
 | `org.apache.flink.api.java.tuple`         | `FlinkNet.Api.Tuples`             |
 | `org.apache.flink.api.java.typeutils.runtime` | `FlinkNet.Api.TypeUtils.Runtime` |
 | `org.apache.flink.configuration`          | `FlinkNet.Configuration`          |
+| `org.apache.flink.core.fs`                | `FlinkNet.Core.Fs`                |
 | `org.apache.flink.core.memory`            | `FlinkNet.Core.Memory`            |
 | `org.apache.flink.types`                  | `FlinkNet.Types`                  |
 | `org.apache.flink.util`                   | `FlinkNet.Util`                   |
@@ -176,7 +177,14 @@ has a native C# equivalent:
      Java's erased `TypeSerializer<Object>[]` becomes reflective
      object-boxing adapters). Deferred: comparators, TypeExtractor,
      `TupleTypeInfo`, Date/BigInteger/... infos.
-   - ⬜ next slices: `core.fs`/`core.io`,
+   - ✅ core.fs foundation: `Path` (URI semantics incl. Windows
+     drives, normalization and dot-segment removal; `toUri()` maps to
+     the `PathUri` component record), `FileSystem` abstract base with a
+     scheme registry (plugins/service-loading deferred),
+     `FSDataInput/OutputStream` over `System.IO.Stream`,
+     `IFileStatus`/`IBlockLocation`, and the full `LocalFileSystem`.
+     `StringUtils` DataView string I/O unblocked and added.
+   - ⬜ next slices: `core.io` (IOReadableWritable, input splits),
      option catalogs (`CoreOptions`, `TaskManagerOptions`, ...) as
      their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a

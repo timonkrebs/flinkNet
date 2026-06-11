@@ -25,10 +25,6 @@ namespace FlinkNet.Util;
 
 /// <summary>
 /// Utility class to convert objects into strings and vice-versa.
-///
-/// <para>PORT NOTE: the <c>writeString</c>/<c>readString</c> family working on
-/// <c>DataInputView</c>/<c>DataOutputView</c> is deferred to the <c>core.memory</c>
-/// increment together with <c>StringValue</c>.</para>
 /// </summary>
 [PublicEvolving]
 public static class StringUtils
@@ -244,6 +240,54 @@ public static class StringUtils
         }
         return c;
     }
+
+    /// <summary>
+    /// Writes a string to the given output. The written string can be read with
+    /// <see cref="ReadString"/>.
+    /// </summary>
+    /// <param name="str">The string to write</param>
+    /// <param name="output">The output to write to</param>
+    public static void WriteString(string str, FlinkNet.Core.Memory.IDataOutputView output)
+    {
+        ArgumentNullException.ThrowIfNull(str);
+        FlinkNet.Types.StringValue.WriteString(str, output);
+    }
+
+    /// <summary>
+    /// Reads a non-null string from the given input.
+    /// </summary>
+    /// <param name="input">The input to read from</param>
+    /// <returns>The deserialized string</returns>
+    public static string ReadString(FlinkNet.Core.Memory.IDataInputView input) =>
+        FlinkNet.Types.StringValue.ReadString(input)!;
+
+    /// <summary>
+    /// Writes a string to the given output. The string may be null. The written string can be
+    /// read with <see cref="ReadNullableString"/>.
+    /// </summary>
+    /// <param name="str">The string to write, or null</param>
+    /// <param name="output">The output to write to</param>
+    public static void WriteNullableString(string? str, FlinkNet.Core.Memory.IDataOutputView output)
+    {
+        if (str != null)
+        {
+            output.WriteBoolean(true);
+            WriteString(str, output);
+        }
+        else
+        {
+            output.WriteBoolean(false);
+        }
+    }
+
+    /// <summary>
+    /// Reads a string from the given input. The string may be null and must have been written
+    /// with <see cref="WriteNullableString"/>.
+    /// </summary>
+    /// <param name="input">The input to read from</param>
+    /// <returns>The deserialized string, or null</returns>
+    public static string? ReadNullableString(FlinkNet.Core.Memory.IDataInputView input) =>
+        input.ReadBoolean() ? ReadString(input) : null;
 
     /// <summary>
     /// Checks if the string is null, empty, or contains only whitespace characters. A whitespace
