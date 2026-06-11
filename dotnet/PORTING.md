@@ -49,6 +49,7 @@ dotnet test
 | `org.apache.flink.api.common.state`       | `FlinkNet.Api.Common.State`       |
 | `org.apache.flink.api.common.state.v2`    | `FlinkNet.Api.Common.State.V2`    |
 | `org.apache.flink.api.common.typeinfo`    | `FlinkNet.Api.Common.TypeInfo`    |
+| `org.apache.flink.api.common.typeutils`   | `FlinkNet.Api.Common.TypeUtils`   |
 | `org.apache.flink.api.common.watermark`   | `FlinkNet.Api.Common.Watermarks`  |
 | `org.apache.flink.api.connector.dsv2`     | `FlinkNet.Api.Connector.DsV2`     |
 | `org.apache.flink.api.java.functions`     | `FlinkNet.Api.Functions`          |
@@ -156,8 +157,16 @@ has a native C# equivalent:
      (`AbstractPagedInput/OutputView`, RandomAccess views), segment
      `get/put(DataInput/Output)` overloads, `ByteArray*StreamWithPos`,
      `ManagedMemoryUseCase`.
-   - ⬜ next slices: option catalogs (`CoreOptions`,
-     `TaskManagerOptions`, ...) as their subsystems are ported,
+   - ✅ typeutils foundation: `TypeSerializer<T>` abstract base,
+     `TypeSerializerSingleton<T>`, the nine primitive serializers
+     (bool/byte/short/char/int/long/float/double/string) and
+     `StringValue` varint string I/O. Deferred:
+     `TypeSerializerSnapshot` schema-evolution subsystem (state
+     increment), composite serializers (List/Map/Generic arrays),
+     Value types.
+   - ⬜ next slices: composite serializers and `TypeInformation`,
+     option catalogs (`CoreOptions`, `TaskManagerOptions`, ...) as
+     their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
      C# pattern for the erased/raw `ConfigOption` type), binary
      `read`/`write` once `core.memory` exists, then `core.fs` →
