@@ -119,8 +119,9 @@ has a native C# equivalent:
    slices: `configuration` → `util` → `core.memory` → `core.fs` →
    `api.common.typeutils` → `core.io`.
    - ✅ configuration mechanism: `ConfigOption`/`ConfigOptions`,
-     `Configuration` (+`UnmodifiableConfiguration`), `ConfigurationUtils`
-     conversions, `StructuredOptionsSplitter`, `description/*`, minimal
+     `Configuration` (+`UnmodifiableConfiguration`, `DelegatingConfiguration`),
+     `ConfigurationUtils` conversions, `ConfigUtils` encode/decode,
+     `StructuredOptionsSplitter`, `description/*`, minimal
      `GlobalConfiguration`/`SecurityOptions` (sensitivity only), and
      `util.TimeUtils` (`Duration` → `TimeSpan`).
    - Additional conventions established here: Java's
@@ -129,13 +130,14 @@ has a native C# equivalent:
      boxed (`null` = no default, see `ConfigOption.DefaultValueBoxed`);
      structured values use the legacy Flink 1.x string format until the
      YAML increment.
-   - ⬜ next slices: `DelegatingConfiguration`, `ConfigUtils`,
-     `YamlParserUtils` + `GlobalConfiguration` loading (standard-YAML
-     rendering; needs a YAML dependency decision), option catalogs
-     (`CoreOptions`, `TaskManagerOptions`, ...) as their subsystems are
-     ported, `DescribedEnum` (needs a C# pattern for enum-with-interface),
-     binary `read`/`write` once `core.memory` exists, then `util` →
-     `core.memory` → `core.fs` → `api.common.typeutils` → `core.io`.
+   - ⬜ next slices: `YamlParserUtils` + `GlobalConfiguration` loading
+     (standard-YAML rendering; needs a YAML dependency decision), option
+     catalogs (`CoreOptions`, `TaskManagerOptions`, ...) as their
+     subsystems are ported, `DescribedEnum` and
+     `ConfigUtils.getAllConfigOptions` (both need a C# pattern for the
+     erased/raw `ConfigOption` type), binary `read`/`write` once
+     `core.memory` exists, then `util` → `core.memory` → `core.fs` →
+     `api.common.typeutils` → `core.io`.
 3. ⬜ `flink-metrics-core`, then `flink-datastream-api`.
 4. ⬜ `flink-rpc` — replace Pekko/Akka with an in-process + TCP RPC layer
    (candidates: built-in sockets + System.Threading.Channels, or gRPC).
