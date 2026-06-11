@@ -137,8 +137,18 @@ has a native C# equivalent:
      `Configuration.ToFileWritableMap`, and YAML-first
      `ConfigurationUtils` conversions with the legacy format as parsing
      fallback — matching Flink 2.x behavior.
-   - ⬜ next slices: option catalogs (`CoreOptions`,
-     `TaskManagerOptions`, ...) as their subsystems are ported,
+   - ✅ util foundation: `MathUtils`, `StringUtils` (hex/random/array
+     helpers; DataView string I/O deferred to `core.memory`),
+     `AbstractID`, `FlinkException`/`FlinkRuntimeException`,
+     `ICollector<T>`. Not ported by design: `Preconditions` (use
+     `ArgumentNullException.ThrowIfNull` & friends), `CollectionUtil`
+     capacity helpers (Dictionary/List capacity constructors), and
+     `WrappingRuntimeException` (checked-exception tunneling is
+     unnecessary in C#).
+   - ⬜ next slices: `core.memory` (`MemorySegment` on `Span<byte>`/
+     `Unsafe`, `DataInputView`/`DataOutputView`), option catalogs
+     (`CoreOptions`, `TaskManagerOptions`, ...) as their subsystems are
+     ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
      C# pattern for the erased/raw `ConfigOption` type), binary
      `read`/`write` once `core.memory` exists, then `util` →
