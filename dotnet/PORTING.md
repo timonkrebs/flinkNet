@@ -11,7 +11,7 @@ Java tree is removed only once the port is complete.
 |------------------------|-------------------------------------------|-------------|
 | `flink-annotations`    | `src/FlinkNet.Annotations`                | ✅ ported   |
 | `flink-core-api`       | `src/FlinkNet.Core.Api`                   | ✅ ported   |
-| `flink-core`           | `src/FlinkNet.Core` (planned)             | ⬜ next     |
+| `flink-core`           | `src/FlinkNet.Core`                       | 🟨 in progress |
 | `flink-metrics-core`   | `src/FlinkNet.Metrics.Core` (planned)     | ⬜          |
 | `flink-datastream-api` | `src/FlinkNet.DataStream.Api` (planned)   | ⬜          |
 | `flink-rpc`            | `src/FlinkNet.Rpc` (planned)              | ⬜          |
@@ -114,10 +114,28 @@ has a native C# equivalent:
 ## Porting order (dependency-driven roadmap)
 
 1. ✅ `flink-annotations`, `flink-core-api` — pure API surface, no logic.
-2. ⬜ `flink-core` — configuration, filesystems, memory segments, type
-   serialization core. Biggest foundational chunk (~1.3k files); port in
+2. 🟨 `flink-core` — configuration, filesystems, memory segments, type
+   serialization core. Biggest foundational chunk (~1.3k files); ported in
    slices: `configuration` → `util` → `core.memory` → `core.fs` →
    `api.common.typeutils` → `core.io`.
+   - ✅ configuration mechanism: `ConfigOption`/`ConfigOptions`,
+     `Configuration` (+`UnmodifiableConfiguration`), `ConfigurationUtils`
+     conversions, `StructuredOptionsSplitter`, `description/*`, minimal
+     `GlobalConfiguration`/`SecurityOptions` (sensitivity only), and
+     `util.TimeUtils` (`Duration` → `TimeSpan`).
+   - Additional conventions established here: Java's
+     `Optional<T> getOptional(...)` maps to the .NET try-pattern
+     (`bool TryGet(..., out T)`); value-type option defaults are stored
+     boxed (`null` = no default, see `ConfigOption.DefaultValueBoxed`);
+     structured values use the legacy Flink 1.x string format until the
+     YAML increment.
+   - ⬜ next slices: `DelegatingConfiguration`, `ConfigUtils`,
+     `YamlParserUtils` + `GlobalConfiguration` loading (standard-YAML
+     rendering; needs a YAML dependency decision), option catalogs
+     (`CoreOptions`, `TaskManagerOptions`, ...) as their subsystems are
+     ported, `DescribedEnum` (needs a C# pattern for enum-with-interface),
+     binary `read`/`write` once `core.memory` exists, then `util` →
+     `core.memory` → `core.fs` → `api.common.typeutils` → `core.io`.
 3. ⬜ `flink-metrics-core`, then `flink-datastream-api`.
 4. ⬜ `flink-rpc` — replace Pekko/Akka with an in-process + TCP RPC layer
    (candidates: built-in sockets + System.Threading.Channels, or gRPC).
