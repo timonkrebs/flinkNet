@@ -332,9 +332,11 @@ public class ConfigurationTest
     {
         var configuration = new FlinkNet.Configuration.Configuration();
         const string listValues = "value1;value2;value3";
+        const string yamlListValues = "[value1, value2, value3]";
         configuration.Set(ListStringOption, listValues.Split(';').ToList());
 
         const string mapValues = "key1:value1,key2:value2";
+        const string yamlMapValues = "{key1: value1, key2: value2}";
         configuration.Set(
             MapOption,
             mapValues.Split(',').ToDictionary(e => e.Split(':')[0], e => e.Split(':')[1]));
@@ -342,11 +344,35 @@ public class ConfigurationTest
         TimeSpan duration = TimeSpan.FromMilliseconds(3000);
         configuration.Set(DurationOption, duration);
 
-        // PORT NOTE: Java expects the standard-YAML rendering ("[value1, value2, value3]");
-        // the port currently renders the legacy Flink format, which round-trips with the
-        // legacy parser.
-        Assert.Equal(listValues, configuration.ToMap()[ListStringOption.Key]);
-        Assert.Equal(mapValues, configuration.ToMap()[MapOption.Key]);
+        Assert.Equal(yamlListValues, configuration.ToMap()[ListStringOption.Key]);
+        Assert.Equal(yamlMapValues, configuration.ToMap()[MapOption.Key]);
+        Assert.Equal("3 s", configuration.ToMap()[DurationOption.Key]);
+    }
+
+    [Fact]
+    public void TestToFileWritableMap()
+    {
+        var configuration = new FlinkNet.Configuration.Configuration();
+        const string listValues = "value1;value2;value3";
+        const string yamlListValues = "[value1, value2, value3]";
+        configuration.Set(ListStringOption, listValues.Split(';').ToList());
+
+        const string mapValues = "key1:value1,key2:value2";
+        const string yamlMapValues = "{key1: value1, key2: value2}";
+        configuration.Set(
+            MapOption,
+            mapValues.Split(',').ToDictionary(e => e.Split(':')[0], e => e.Split(':')[1]));
+
+        TimeSpan duration = TimeSpan.FromMilliseconds(3000);
+        configuration.Set(DurationOption, duration);
+
+        const string strValues = "*";
+        const string yamlStrValues = "'*'";
+        configuration.Set(StringOption, strValues);
+
+        Assert.Equal(yamlListValues, configuration.ToFileWritableMap()[ListStringOption.Key]);
+        Assert.Equal(yamlMapValues, configuration.ToFileWritableMap()[MapOption.Key]);
+        Assert.Equal(yamlStrValues, configuration.ToFileWritableMap()[StringOption.Key]);
         Assert.Equal("3 s", configuration.ToMap()[DurationOption.Key]);
     }
 

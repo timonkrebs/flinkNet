@@ -23,8 +23,8 @@ namespace FlinkNet.Configuration;
 /// <summary>
 /// A configuration that manages a subset of keys with a common prefix from a given configuration.
 ///
-/// <para>PORT NOTE: the binary <c>read</c>/<c>write</c> methods, <c>addAllToProperties</c> and
-/// <c>toFileWritableMap</c> are deferred together with their carriers (see Configuration).</para>
+/// <para>PORT NOTE: the binary <c>read</c>/<c>write</c> methods and <c>addAllToProperties</c>
+/// are deferred together with their carriers (see Configuration).</para>
 /// </summary>
 public sealed class DelegatingConfiguration : Configuration
 {
@@ -118,6 +118,20 @@ public sealed class DelegatingConfiguration : Configuration
             if (entry.Key.StartsWith(_prefix, StringComparison.Ordinal))
             {
                 prefixed[entry.Key[_prefix.Length..]] = entry.Value;
+            }
+        }
+        return prefixed;
+    }
+
+    public override IDictionary<string, string> ToFileWritableMap()
+    {
+        IDictionary<string, string> map = _backingConfig.ToFileWritableMap();
+        var prefixed = new Dictionary<string, string>();
+        foreach (KeyValuePair<string, string> entry in map)
+        {
+            if (entry.Key.StartsWith(_prefix, StringComparison.Ordinal))
+            {
+                prefixed[entry.Key[_prefix.Length..]] = YamlParserUtils.ToYamlString(entry.Value);
             }
         }
         return prefixed;

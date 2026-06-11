@@ -24,17 +24,40 @@ namespace FlinkNet.Configuration;
 /// <summary>
 /// Utility class for <see cref="Configuration"/> related helper functions.
 ///
-/// <para>PORT NOTE: Java additionally routes string conversion of structured values through
-/// SnakeYAML (<c>YamlParserUtils</c>) with the legacy Flink 1.x format as fallback. The port
-/// currently implements the (self-consistent, round-trippable) legacy format only; standard-YAML
-/// support arrives with the <c>GlobalConfiguration</c>/<c>YamlParserUtils</c> increment.
-/// Helpers that depend on yet-unported option catalogs (<c>parseTempDirectories</c>,
+/// <para>PORT NOTE: structured values render and parse as standard YAML (via
+/// <see cref="YamlParserUtils"/>) with the legacy Flink 1.x format as parsing fallback, matching
+/// Java. Helpers that depend on yet-unported option catalogs (<c>parseTempDirectories</c>,
 /// <c>getStandaloneClusterStartupPeriodTime</c>, JVM argument parsing, ...) are deferred to the
 /// increments that port those catalogs.</para>
 /// </summary>
 public static class ConfigurationUtils
 {
     private static readonly string[] Empty = [];
+
+    /// <summary>
+    /// Converts the provided configuration data into a format suitable for writing to a file,
+    /// based on the <paramref name="flattenYaml"/> flag.
+    ///
+    /// <para>Only when <paramref name="flattenYaml"/> is <c>false</c> is a nested YAML format
+    /// used; otherwise a flat key-value pair format is output. Each entry in the returned list
+    /// represents a single line that can be written directly to a file.</para>
+    /// </summary>
+    /// <param name="configuration">The configuration to be converted.</param>
+    /// <param name="flattenYaml">A boolean flag indicating if the configuration data should be
+    /// output in a flattened format.</param>
+    /// <returns>A list of strings, where each string represents a line of the file-writable data
+    /// in the chosen format.</returns>
+    public static IList<string> ConvertConfigToWritableLines(
+        Configuration configuration, bool flattenYaml)
+    {
+        if (!flattenYaml)
+        {
+            return YamlParserUtils.ConvertAndDumpYamlFromFlatMap(configuration.ConfData);
+        }
+
+        IDictionary<string, string> fileWritableMap = configuration.ToFileWritableMap();
+        return fileWritableMap.Select(entry => entry.Key + ": " + entry.Value).ToList();
+    }
 
     /// <summary>
     /// Parses a string as a map of strings. The expected format of the map is:
@@ -182,10 +205,8 @@ public static class ConfigurationUtils
     /// <summary>
     /// Converts the raw value to a list whose elements are of the provided atomic type. The
     /// returned list is a <c>List&lt;atomicClass&gt;</c> so it can be cast to the option's
-    /// <c>IList&lt;T&gt;</c> type.
-    ///
-    /// <para>PORT NOTE: Java parses standard-YAML lists first and falls back to the legacy
-    /// semicolon-separated format; the port currently implements the legacy format only.</para>
+    /// <c>IList&lt;T&gt;</c> type. Standard-YAML lists are tried first, falling back to the
+    /// legacy semicolon-separated format.
     /// </summary>
     public static object ConvertToList(object rawValue, Type atomicClass)
     {
@@ -194,12 +215,34 @@ public static class ConfigurationUtils
             return rawValue;
         }
 
+        try
+        {
+            List<object?> data =
+                YamlParserUtils.ConvertToObject<List<object?>>(ConvertToString(rawValue))
+                    ?? throw new ArgumentException("not a YAML list");
+            return BuildTypedList(data, atomicClass);
+        }
+        catch (Exception)
+        {
+            // Fallback to legacy pattern
+            return ConvertToListWithLegacyProperties(rawValue, atomicClass);
+        }
+    }
+
+    private static object ConvertToListWithLegacyProperties(object rawValue, Type atomicClass)
+    {
+        List<string> splits = StructuredOptionsSplitter.SplitEscaped(ConvertToString(rawValue), ';');
+        return BuildTypedList(splits, atomicClass);
+    }
+
+    private static object BuildTypedList(
+        System.Collections.IEnumerable elements, Type atomicClass)
+    {
         Type listType = typeof(List<>).MakeGenericType(atomicClass);
         var result = (System.Collections.IList)Activator.CreateInstance(listType)!;
-        foreach (string element in StructuredOptionsSplitter.SplitEscaped(
-            ConvertToString(rawValue), ';'))
+        foreach (object? element in elements)
         {
-            result.Add(ConvertValue(element, atomicClass));
+            result.Add(ConvertValue(element!, atomicClass));
         }
         return result;
     }
@@ -210,7 +253,27 @@ public static class ConfigurationUtils
         {
             return alreadyMap;
         }
+        if (o is System.Collections.IDictionary rawMap)
+        {
+            return ConvertToStringMap(rawMap);
+        }
 
+        try
+        {
+            Dictionary<object, object?> map =
+                YamlParserUtils.ConvertToObject<Dictionary<object, object?>>(ConvertToString(o))
+                    ?? throw new ArgumentException("not a YAML map");
+            return ConvertToStringMap(map);
+        }
+        catch (Exception)
+        {
+            // Fallback to legacy pattern
+            return ConvertToPropertiesWithLegacyPattern(o);
+        }
+    }
+
+    private static IDictionary<string, string> ConvertToPropertiesWithLegacyPattern(object o)
+    {
         List<string> listOfRawProperties =
             StructuredOptionsSplitter.SplitEscaped(ConvertToString(o), ',');
         var result = new Dictionary<string, string>();
@@ -222,6 +285,16 @@ public static class ConfigurationUtils
                 throw new ArgumentException("Map item is not a key-value pair (missing ':'?)");
             }
             result[pair[0]] = pair[1];
+        }
+        return result;
+    }
+
+    private static Dictionary<string, string> ConvertToStringMap(System.Collections.IDictionary map)
+    {
+        var result = new Dictionary<string, string>();
+        foreach (System.Collections.DictionaryEntry entry in map)
+        {
+            result[ConvertToString(entry.Key)] = ConvertToString(entry.Value!);
         }
         return result;
     }
@@ -275,9 +348,9 @@ public static class ConfigurationUtils
     }
 
     /// <summary>
-    /// Converts a stored raw value to its string representation, using the legacy Flink
-    /// representation for structured values (lists joined with <c>;</c>, maps as
-    /// <c>k1:v1,k2:v2</c>, durations via <see cref="TimeUtils.FormatWithHighestUnit"/>).
+    /// Converts a stored raw value to its string representation. Non-string values are rendered
+    /// in standard YAML flow syntax (lists as <c>[a, b]</c>, maps as <c>{k: v}</c>, durations via
+    /// <see cref="TimeUtils.FormatWithHighestUnit"/>).
     /// </summary>
     internal static string ConvertToString(object o)
     {
@@ -285,65 +358,7 @@ public static class ConfigurationUtils
         {
             return s;
         }
-        else if (o is TimeSpan duration)
-        {
-            return TimeUtils.FormatWithHighestUnit(duration);
-        }
-        else if (o is bool b)
-        {
-            // Java Boolean.toString is lowercase; C# bool.ToString() is "True"/"False"
-            return b ? "true" : "false";
-        }
-        else if (o is System.Collections.IDictionary || IsGenericStringMap(o))
-        {
-            return string.Join(
-                ",",
-                EnumerateMapEntries(o)
-                    .Select(
-                        e =>
-                        {
-                            string escapedKey =
-                                StructuredOptionsSplitter.EscapeWithSingleQuote(
-                                    ConvertToString(e.Key), ":");
-                            string escapedValue =
-                                StructuredOptionsSplitter.EscapeWithSingleQuote(
-                                    ConvertToString(e.Value), ":");
-                            return StructuredOptionsSplitter.EscapeWithSingleQuote(
-                                escapedKey + ":" + escapedValue, ",");
-                        }));
-        }
-        else if (o is System.Collections.IList list)
-        {
-            return string.Join(
-                ";",
-                list.Cast<object?>()
-                    .Select(
-                        e =>
-                            StructuredOptionsSplitter.EscapeWithSingleQuote(
-                                ConvertToString(e!), ";")));
-        }
-
-        return Convert.ToString(o, CultureInfo.InvariantCulture) ?? "";
-    }
-
-    private static bool IsGenericStringMap(object o) => o is IEnumerable<KeyValuePair<string, string>>;
-
-    private static IEnumerable<(object Key, object Value)> EnumerateMapEntries(object o)
-    {
-        if (o is IEnumerable<KeyValuePair<string, string>> genericMap)
-        {
-            foreach (KeyValuePair<string, string> entry in genericMap)
-            {
-                yield return (entry.Key, entry.Value);
-            }
-        }
-        else
-        {
-            foreach (System.Collections.DictionaryEntry entry in (System.Collections.IDictionary)o)
-            {
-                yield return (entry.Key, entry.Value!);
-            }
-        }
+        return YamlParserUtils.ToYamlString(o);
     }
 
     internal static int ConvertToInt(object o)

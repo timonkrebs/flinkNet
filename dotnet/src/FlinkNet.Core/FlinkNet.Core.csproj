@@ -10,4 +10,8 @@
     <ProjectReference Include="..\FlinkNet.Core.Api\FlinkNet.Core.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="18.0.0" />
+  </ItemGroup>
+
 </Project>

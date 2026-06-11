@@ -353,6 +353,29 @@ public class Configuration : IReadableConfig, IWritableConfig
     }
 
     /// <summary>
+    /// Converts the configuration into a <c>IDictionary&lt;string, string&gt;</c> representation
+    /// suitable for writing to a file.
+    ///
+    /// <para>This method ensures the value is properly escaped when writing the key-value pair to
+    /// a standard YAML file.</para>
+    /// </summary>
+    [Internal]
+    public virtual IDictionary<string, string> ToFileWritableMap()
+    {
+        lock (ConfData)
+        {
+            var ret = new Dictionary<string, string>(ConfData.Count);
+            foreach (KeyValuePair<string, object> entry in ConfData)
+            {
+                // Because some characters in standard yaml must be escaped by quotes, such as
+                // '*', the value is wrapped via the YAML dumper here
+                ret[entry.Key] = YamlParserUtils.ToYamlString(entry.Value);
+            }
+            return ret;
+        }
+    }
+
+    /// <summary>
     /// Removes given config option from the configuration.
     /// </summary>
     /// <param name="configOption">config option to remove</param>

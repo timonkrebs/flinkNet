@@ -128,16 +128,21 @@ has a native C# equivalent:
      `Optional<T> getOptional(...)` maps to the .NET try-pattern
      (`bool TryGet(..., out T)`); value-type option defaults are stored
      boxed (`null` = no default, see `ConfigOption.DefaultValueBoxed`);
-     structured values use the legacy Flink 1.x string format until the
-     YAML increment.
-   - ⬜ next slices: `YamlParserUtils` + `GlobalConfiguration` loading
-     (standard-YAML rendering; needs a YAML dependency decision), option
-     catalogs (`CoreOptions`, `TaskManagerOptions`, ...) as their
-     subsystems are ported, `DescribedEnum` and
-     `ConfigUtils.getAllConfigOptions` (both need a C# pattern for the
-     erased/raw `ConfigOption` type), binary `read`/`write` once
-     `core.memory` exists, then `util` → `core.memory` → `core.fs` →
-     `api.common.typeutils` → `core.io`.
+     structured values render as standard YAML flow strings (the legacy
+     Flink 1.x format remains supported as a parsing fallback).
+   - ✅ YAML layer: `YamlParserUtils` (YamlDotNet for parsing with a
+     YAML 1.2 core-schema resolver; hand-rolled flow/block emitters that
+     match SnakeYAML's output), `GlobalConfiguration.LoadConfiguration`
+     (config.yaml + flatten + dynamic properties),
+     `Configuration.ToFileWritableMap`, and YAML-first
+     `ConfigurationUtils` conversions with the legacy format as parsing
+     fallback — matching Flink 2.x behavior.
+   - ⬜ next slices: option catalogs (`CoreOptions`,
+     `TaskManagerOptions`, ...) as their subsystems are ported,
+     `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
+     C# pattern for the erased/raw `ConfigOption` type), binary
+     `read`/`write` once `core.memory` exists, then `util` →
+     `core.memory` → `core.fs` → `api.common.typeutils` → `core.io`.
 3. ⬜ `flink-metrics-core`, then `flink-datastream-api`.
 4. ⬜ `flink-rpc` — replace Pekko/Akka with an in-process + TCP RPC layer
    (candidates: built-in sockets + System.Threading.Channels, or gRPC).
