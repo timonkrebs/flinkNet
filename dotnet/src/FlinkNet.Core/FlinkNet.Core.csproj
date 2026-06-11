@@ -3,6 +3,8 @@
   <PropertyGroup>
     <Description>FlinkNet core. Port of the Apache Flink flink-core module.</Description>
     <RootNamespace>FlinkNet</RootNamespace>
+    <!-- core.memory implements MemorySegment over native memory -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

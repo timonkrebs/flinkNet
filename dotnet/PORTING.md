@@ -54,6 +54,7 @@ dotnet test
 | `org.apache.flink.api.java.functions`     | `FlinkNet.Api.Functions`          |
 | `org.apache.flink.api.java.tuple`         | `FlinkNet.Api.Tuples`             |
 | `org.apache.flink.configuration`          | `FlinkNet.Configuration`          |
+| `org.apache.flink.core.memory`            | `FlinkNet.Core.Memory`            |
 | `org.apache.flink.types`                  | `FlinkNet.Types`                  |
 | `org.apache.flink.util`                   | `FlinkNet.Util`                   |
 
@@ -145,14 +146,22 @@ has a native C# equivalent:
      capacity helpers (Dictionary/List capacity constructors), and
      `WrappingRuntimeException` (checked-exception tunneling is
      unnecessary in C#).
-   - ⬜ next slices: `core.memory` (`MemorySegment` on `Span<byte>`/
-     `Unsafe`, `DataInputView`/`DataOutputView`), option catalogs
-     (`CoreOptions`, `TaskManagerOptions`, ...) as their subsystems are
-     ported,
+   - ✅ core.memory foundation: `IDataInputView`/`IDataOutputView`
+     (full Java DataInput/DataOutput contract, big-endian wire format),
+     `MemorySegment` (heap byte[] or native memory via unsafe code, with
+     native-order accessors plus explicit BE/LE variants and `AsSpan` in
+     place of ByteBuffer views), `MemorySegmentFactory`,
+     `DataOutputSerializer`/`DataInputDeserializer` (incl. Java modified
+     UTF-8), and the Stream view wrappers. Deferred: paged views
+     (`AbstractPagedInput/OutputView`, RandomAccess views), segment
+     `get/put(DataInput/Output)` overloads, `ByteArray*StreamWithPos`,
+     `ManagedMemoryUseCase`.
+   - ⬜ next slices: option catalogs (`CoreOptions`,
+     `TaskManagerOptions`, ...) as their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
      C# pattern for the erased/raw `ConfigOption` type), binary
-     `read`/`write` once `core.memory` exists, then `util` →
-     `core.memory` → `core.fs` → `api.common.typeutils` → `core.io`.
+     `read`/`write` once `core.memory` exists, then `core.fs` →
+     `api.common.typeutils` (now unblocked by core.memory) → `core.io`.
 3. ⬜ `flink-metrics-core`, then `flink-datastream-api`.
 4. ⬜ `flink-rpc` — replace Pekko/Akka with an in-process + TCP RPC layer
    (candidates: built-in sockets + System.Threading.Channels, or gRPC).
