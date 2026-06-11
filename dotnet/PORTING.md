@@ -50,10 +50,12 @@ dotnet test
 | `org.apache.flink.api.common.state.v2`    | `FlinkNet.Api.Common.State.V2`    |
 | `org.apache.flink.api.common.typeinfo`    | `FlinkNet.Api.Common.TypeInfo`    |
 | `org.apache.flink.api.common.typeutils`   | `FlinkNet.Api.Common.TypeUtils`   |
+| `org.apache.flink.api.common.serialization` | `FlinkNet.Api.Common.Serialization` |
 | `org.apache.flink.api.common.watermark`   | `FlinkNet.Api.Common.Watermarks`  |
 | `org.apache.flink.api.connector.dsv2`     | `FlinkNet.Api.Connector.DsV2`     |
 | `org.apache.flink.api.java.functions`     | `FlinkNet.Api.Functions`          |
 | `org.apache.flink.api.java.tuple`         | `FlinkNet.Api.Tuples`             |
+| `org.apache.flink.api.java.typeutils.runtime` | `FlinkNet.Api.TypeUtils.Runtime` |
 | `org.apache.flink.configuration`          | `FlinkNet.Configuration`          |
 | `org.apache.flink.core.memory`            | `FlinkNet.Core.Memory`            |
 | `org.apache.flink.types`                  | `FlinkNet.Types`                  |
@@ -167,7 +169,14 @@ has a native C# equivalent:
      (`IList<T>`, size + elements) and `MapSerializer<TKey,TValue>`
      (`IDictionary<K,V>`, size + entries with per-value null flags),
      wire-compatible with Java.
-   - ⬜ next slices: `TypeInformation` and the tuple serializers,
+   - ✅ type information: `TypeInformation<T>` abstract base (with a
+     minimal `ISerializerConfig` placeholder), `BasicTypeInfo` for the
+     nine basic types incl. Java's auto-cast tables, and
+     `TupleSerializer<T>` (merged TupleSerializerBase/TupleSerializer;
+     Java's erased `TypeSerializer<Object>[]` becomes reflective
+     object-boxing adapters). Deferred: comparators, TypeExtractor,
+     `TupleTypeInfo`, Date/BigInteger/... infos.
+   - ⬜ next slices: `core.fs`/`core.io`,
      option catalogs (`CoreOptions`, `TaskManagerOptions`, ...) as
      their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
