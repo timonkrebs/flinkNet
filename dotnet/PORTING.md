@@ -13,7 +13,7 @@ Java tree is removed only once the port is complete.
 | `flink-core-api`       | `src/FlinkNet.Core.Api`                   | ✅ ported   |
 | `flink-core`           | `src/FlinkNet.Core`                       | 🟨 in progress |
 | `flink-metrics-core`   | `src/FlinkNet.Metrics.Core`               | 🟨 in progress |
-| `flink-datastream-api` | `src/FlinkNet.DataStream.Api`             | 🟨 in progress |
+| `flink-datastream-api` | `src/FlinkNet.DataStream.Api`             | ✅ ported   |
 | `flink-rpc`            | `src/FlinkNet.Rpc` (planned)              | ⬜          |
 | `flink-runtime`        | `src/FlinkNet.Runtime` (planned)          | ⬜          |
 | `flink-streaming-java` | `src/FlinkNet.Streaming` (planned)        | ⬜          |
@@ -210,8 +210,15 @@ has a native C# equivalent:
    ProcessConfigurableAnd* companions), ICollector, the
    NoOutputUntilEndOfInput attribute and IExecutionEnvironment (the
    reflective instance loading maps to explicit factory registration).
-   Deferred: extension/ (event-time, join, window strategies) and
-   BuiltinFuncs — they land with the implementation layer.
+   ✅ extensions: event-time (EventTimeExtension with the built-in
+   watermark declarations, the event-time process-function family,
+   extractor/strategy/generator-builder, IEventTimeManager), join
+   (IJoinFunction, JoinType), and windows (window contexts with
+   nullable window-state getters, the window process-function family,
+   and the Global/Tumbling/Sliding/Session strategies). Reflective
+   impl-delegation maps to EventTimeExtension.IImplProvider
+   registration. Only BuiltinFuncs remains — pure glue over the
+   implementation module, ported with it.
 4. ⬜ `flink-rpc` — replace Pekko/Akka with an in-process + TCP RPC layer
    (candidates: built-in sockets + System.Threading.Channels, or gRPC).
 5. ⬜ `flink-runtime` — scheduler, checkpointing, network stack (Netty →
