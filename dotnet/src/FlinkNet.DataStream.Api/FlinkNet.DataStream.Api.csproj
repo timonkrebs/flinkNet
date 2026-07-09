@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>FlinkNet DataStream API. Port of the Apache Flink flink-datastream-api module.</Description>
+    <RootNamespace>FlinkNet</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FlinkNet.Annotations\FlinkNet.Annotations.csproj" />
+    <ProjectReference Include="..\FlinkNet.Core.Api\FlinkNet.Core.Api.csproj" />
+    <ProjectReference Include="..\FlinkNet.Metrics.Core\FlinkNet.Metrics.Core.csproj" />
+  </ItemGroup>
+
+</Project>

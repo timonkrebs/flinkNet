@@ -13,7 +13,7 @@ Java tree is removed only once the port is complete.
 | `flink-core-api`       | `src/FlinkNet.Core.Api`                   | ✅ ported   |
 | `flink-core`           | `src/FlinkNet.Core`                       | 🟨 in progress |
 | `flink-metrics-core`   | `src/FlinkNet.Metrics.Core`               | 🟨 in progress |
-| `flink-datastream-api` | `src/FlinkNet.DataStream.Api` (planned)   | ⬜          |
+| `flink-datastream-api` | `src/FlinkNet.DataStream.Api`             | 🟨 in progress |
 | `flink-rpc`            | `src/FlinkNet.Rpc` (planned)              | ⬜          |
 | `flink-runtime`        | `src/FlinkNet.Runtime` (planned)          | ⬜          |
 | `flink-streaming-java` | `src/FlinkNet.Streaming` (planned)        | ⬜          |
@@ -57,6 +57,7 @@ dotnet test
 | `org.apache.flink.api.java.tuple`         | `FlinkNet.Api.Tuples`             |
 | `org.apache.flink.api.java.typeutils.runtime` | `FlinkNet.Api.TypeUtils.Runtime` |
 | `org.apache.flink.configuration`          | `FlinkNet.Configuration`          |
+| `org.apache.flink.datastream.api[.*]`     | `FlinkNet.DataStream.Api[.*]`     |
 | `org.apache.flink.core.fs`                | `FlinkNet.Core.Fs`                |
 | `org.apache.flink.metrics`                | `FlinkNet.Metrics`                |
 | `org.apache.flink.core.memory`            | `FlinkNet.Core.Memory`            |
@@ -200,7 +201,17 @@ has a native C# equivalent:
    AbstractReporter/IMetricReporterFactory). Deferred: events/ and
    traces/ observability packages, LogicalScopeProvider consumers, and
    the specialized operator/source/sink group interfaces (they follow
-   their subsystems). Then `flink-datastream-api`.
+   their subsystems).
+4. 🟨 `flink-datastream-api` — ✅ core programming model: the process
+   functions (one-input, two-output, two-input broadcast/non-broadcast,
+   apply-partition), the context hierarchy (runtime/partitioned/
+   non-partitioned, job/task info, state/processing-time managers), the
+   stream interfaces (non-keyed/keyed/global/broadcast with hoisted
+   ProcessConfigurableAnd* companions), ICollector, the
+   NoOutputUntilEndOfInput attribute and IExecutionEnvironment (the
+   reflective instance loading maps to explicit factory registration).
+   Deferred: extension/ (event-time, join, window strategies) and
+   BuiltinFuncs — they land with the implementation layer.
 4. ⬜ `flink-rpc` — replace Pekko/Akka with an in-process + TCP RPC layer
    (candidates: built-in sockets + System.Threading.Channels, or gRPC).
 5. ⬜ `flink-runtime` — scheduler, checkpointing, network stack (Netty →
