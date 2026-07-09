@@ -160,17 +160,46 @@ public class LocalFileSystem : FileSystem
         string srcPath = PathToFilePath(src);
         string dstPath = PathToFilePath(dst);
 
+        // the move fails if the destination directory doesn't exist; Java ignores the
+        // mkdirs() result, so creation failures surface through the move below
+        string? dstParent = System.IO.Path.GetDirectoryName(dstPath);
+        if (!string.IsNullOrEmpty(dstParent))
+        {
+            try
+            {
+                Directory.CreateDirectory(dstParent);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+
+        // Java moves with REPLACE_EXISTING: an existing destination file or empty directory
+        // is replaced, while the regular "move failed" conditions come back as false
         try
         {
-            // a rename into an existing destination or with a missing parent fails, like Java's
-            // Files.move with no options
             if (File.Exists(srcPath))
             {
-                File.Move(srcPath, dstPath, overwrite: false);
+                if (Directory.Exists(dstPath))
+                {
+                    Directory.Delete(dstPath, recursive: false);
+                }
+                File.Move(srcPath, dstPath, overwrite: true);
                 return true;
             }
             if (Directory.Exists(srcPath))
             {
+                if (File.Exists(dstPath))
+                {
+                    File.Delete(dstPath);
+                }
+                else if (Directory.Exists(dstPath))
+                {
+                    Directory.Delete(dstPath, recursive: false);
+                }
                 Directory.Move(srcPath, dstPath);
                 return true;
             }

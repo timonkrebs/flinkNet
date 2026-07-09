@@ -126,8 +126,26 @@ public class MeterViewTest
         Assert.Throws<NotSupportedException>(() => m.MarkEvent());
     }
 
+    /// <summary>Java's <c>Number.longValue()</c> truncates floating gauge values toward
+    /// zero, it does not round them to the nearest integer.</summary>
+    [Fact]
+    public void TestGaugeBackedMeterTruncatesFloatingValues()
+    {
+        double value = 1.9;
+        MeterView m = MeterView.ForGauge(new DoubleFunctionGauge(() => value));
+        Assert.Equal(1, m.Count);
+
+        value = -1.9;
+        Assert.Equal(-1, m.Count);
+    }
+
     private sealed class FunctionGauge(Func<long> supplier) : IGauge<long>
     {
         public long GetValue() => supplier();
+    }
+
+    private sealed class DoubleFunctionGauge(Func<double> supplier) : IGauge<double>
+    {
+        public double GetValue() => supplier();
     }
 }

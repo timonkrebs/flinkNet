@@ -127,6 +127,55 @@ public class ConfigurationTest
         Assert.Equal("value", cfg1.GetString(key, ""));
     }
 
+    /// <summary>PORT NOTE: Java's <c>equals</c> lacks the size check, so a configuration
+    /// compares equal to any superset of itself (asymmetrically); the port restores the
+    /// equals contract (see Configuration.Equals).</summary>
+    [Fact]
+    public void TestEqualsIsSymmetric()
+    {
+        var small = new FlinkNet.Configuration.Configuration();
+        small.SetString("key1", "value1");
+
+        var big = new FlinkNet.Configuration.Configuration();
+        big.SetString("key1", "value1");
+        big.SetString("key2", "value2");
+
+        Assert.False(small.Equals(big));
+        Assert.False(big.Equals(small));
+    }
+
+    /// <summary>Java compares stored List/Map values structurally via
+    /// <c>Object.equals</c>; the port must not fall back to reference equality.</summary>
+    [Fact]
+    public void TestEqualsComparesCollectionValuesStructurally()
+    {
+        var first = new FlinkNet.Configuration.Configuration();
+        first.Set(ListStringOption, new List<string> { "one", "two" });
+        first.Set(MapOption, new Dictionary<string, string> { { "k", "v" } });
+
+        var second = new FlinkNet.Configuration.Configuration();
+        second.Set(ListStringOption, new List<string> { "one", "two" });
+        second.Set(MapOption, new Dictionary<string, string> { { "k", "v" } });
+
+        Assert.Equal(first, second);
+
+        second.Set(ListStringOption, new List<string> { "one", "other" });
+        Assert.NotEqual(first, second);
+    }
+
+    /// <summary>GetValue must render structured values structurally, not as CLR type
+    /// names (see the PORT NOTE on Configuration.GetValue).</summary>
+    [Fact]
+    public void TestGetValueFormatsStructuredValues()
+    {
+        var cfg = new FlinkNet.Configuration.Configuration();
+        cfg.Set(ListStringOption, new List<string> { "a", "b" });
+        cfg.Set(MapOption, new Dictionary<string, string> { { "k1", "v1" }, { "k2", "v2" } });
+
+        Assert.Equal("[a, b]", cfg.GetValue(ListStringOption));
+        Assert.Equal("{k1: v1, k2: v2}", cfg.GetValue(MapOption));
+    }
+
     [Fact]
     public void TestOptionWithDefault()
     {

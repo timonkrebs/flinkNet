@@ -41,7 +41,14 @@ public class LocalFileStatus : IFileStatus
     public LocalFileStatus(FileSystemInfo f, FileSystem fs)
     {
         _file = f;
-        _path = new Path(fs.GetUri().Scheme + ":" + f.FullName.Replace('\\', '/'));
+        // Java's File.toURI().getPath() always carries a leading slash ("/C:/tmp/x" on
+        // Windows); without it the drive letter would parse as a relative path
+        string absolutePath = f.FullName.Replace('\\', '/');
+        if (!absolutePath.StartsWith('/'))
+        {
+            absolutePath = "/" + absolutePath;
+        }
+        _path = new Path(fs.GetUri().Scheme + ":" + absolutePath);
     }
 
     public long AccessTime => new DateTimeOffset(_file.LastAccessTimeUtc).ToUnixTimeMilliseconds();

@@ -169,4 +169,52 @@ public class LocalFileSystemTest : IDisposable
 
         Assert.False(lfs.Mkdirs(file));
     }
+
+    /// <summary>Java renames with REPLACE_EXISTING: committing a temp file over an existing
+    /// destination must succeed.</summary>
+    [Fact]
+    public void TestRenameReplacesExistingTarget()
+    {
+        FileSystem lfs = FileSystem.GetLocalFileSystem();
+
+        Path src = TempPath("rename_src");
+        Path dst = TempPath("rename_dst");
+        File.WriteAllText(src.GetPath(), "new content");
+        File.WriteAllText(dst.GetPath(), "old content");
+
+        Assert.True(lfs.Rename(src, dst));
+        Assert.False(lfs.Exists(src));
+        Assert.Equal("new content", File.ReadAllText(dst.GetPath()));
+    }
+
+    /// <summary>Java creates the destination's parent directory before moving.</summary>
+    [Fact]
+    public void TestRenameCreatesMissingTargetParent()
+    {
+        FileSystem lfs = FileSystem.GetLocalFileSystem();
+
+        Path src = TempPath("rename_deep_src");
+        Path dst = TempPath("missing_parent/rename_dst");
+        File.WriteAllText(src.GetPath(), "content");
+
+        Assert.True(lfs.Rename(src, dst));
+        Assert.True(lfs.Exists(dst));
+    }
+
+    /// <summary>A non-empty destination directory is a regular move failure (Java's
+    /// DirectoryNotEmptyException), reported as false.</summary>
+    [Fact]
+    public void TestRenameOntoNonEmptyDirectoryFails()
+    {
+        FileSystem lfs = FileSystem.GetLocalFileSystem();
+
+        Path src = TempPath("rename_dir_src");
+        Path dst = TempPath("occupied_dir");
+        Assert.True(lfs.Mkdirs(src));
+        Assert.True(lfs.Mkdirs(dst));
+        File.WriteAllText(dst.GetPath() + "/occupant", "here");
+
+        Assert.False(lfs.Rename(src, dst));
+        Assert.True(lfs.Exists(src));
+    }
 }

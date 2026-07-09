@@ -143,7 +143,10 @@ public class Configuration : IReadableConfig, IWritableConfig, Core.Io.IIOReadab
             TryGetRawValueFromOption(configOption, out object? value)
                 ? value
                 : configOption.DefaultValueBoxed;
-        return rawValue?.ToString();
+        // PORT NOTE: Java renders with String.valueOf, which is structural for List/Map
+        // values; .NET collections print their type name from ToString(), so the port uses
+        // its canonical stringification (YAML flow), which its own parsers can read back.
+        return rawValue == null ? null : ConfigurationUtils.ConvertToString(rawValue);
     }
 
     /// <summary>
@@ -653,32 +656,78 @@ public class Configuration : IReadableConfig, IWritableConfig, Core.Io.IIOReadab
         }
 
         Dictionary<string, object> otherConf = other.ConfData;
+
+        // PORT NOTE: Java iterates only this side's entries, so a configuration compares
+        // equal to any superset of itself (asymmetrically); the count check restores the
+        // equals contract.
+        if (ConfData.Count != otherConf.Count)
+        {
+            return false;
+        }
+
         foreach (KeyValuePair<string, object> e in ConfData)
         {
-            object thisVal = e.Value;
             otherConf.TryGetValue(e.Key, out object? otherVal);
-
-            if (thisVal is not byte[] thisBytes)
-            {
-                if (!thisVal.Equals(otherVal))
-                {
-                    return false;
-                }
-            }
-            else if (otherVal is byte[] otherBytes)
-            {
-                if (!thisBytes.SequenceEqual(otherBytes))
-                {
-                    return false;
-                }
-            }
-            else
+            if (otherVal == null || !ValueEquals(e.Value, otherVal))
             {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Compares two stored raw values the way Java's <c>Object.equals</c> does: structurally.
+    /// Java's List/Map values compare element-wise, while .NET collections compare by
+    /// reference, so lists and maps are matched entry by entry here.
+    /// </summary>
+    private static bool ValueEquals(object thisVal, object otherVal)
+    {
+        if (thisVal is byte[] thisBytes)
+        {
+            return otherVal is byte[] otherBytes && thisBytes.SequenceEqual(otherBytes);
+        }
+        if (thisVal is System.Collections.IDictionary thisMap)
+        {
+            if (otherVal is not System.Collections.IDictionary otherMap
+                || thisMap.Count != otherMap.Count)
+            {
+                return false;
+            }
+            foreach (System.Collections.DictionaryEntry entry in thisMap)
+            {
+                object? otherEntry = otherMap.Contains(entry.Key) ? otherMap[entry.Key] : null;
+                if (entry.Value == null || otherEntry == null
+                    ? !Equals(entry.Value, otherEntry)
+                    : !ValueEquals(entry.Value, otherEntry))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (thisVal is System.Collections.IList thisList)
+        {
+            if (otherVal is not System.Collections.IList otherList
+                || thisList.Count != otherList.Count)
+            {
+                return false;
+            }
+            for (int i = 0; i < thisList.Count; i++)
+            {
+                object? thisItem = thisList[i];
+                object? otherItem = otherList[i];
+                if (thisItem == null || otherItem == null
+                    ? !Equals(thisItem, otherItem)
+                    : !ValueEquals(thisItem, otherItem))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return thisVal.Equals(otherVal);
     }
 
     public override string ToString()
