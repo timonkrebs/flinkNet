@@ -12,7 +12,7 @@ Java tree is removed only once the port is complete.
 | `flink-annotations`    | `src/FlinkNet.Annotations`                | ✅ ported   |
 | `flink-core-api`       | `src/FlinkNet.Core.Api`                   | ✅ ported   |
 | `flink-core`           | `src/FlinkNet.Core`                       | 🟨 in progress |
-| `flink-metrics-core`   | `src/FlinkNet.Metrics.Core` (planned)     | ⬜          |
+| `flink-metrics-core`   | `src/FlinkNet.Metrics.Core`               | 🟨 in progress |
 | `flink-datastream-api` | `src/FlinkNet.DataStream.Api` (planned)   | ⬜          |
 | `flink-rpc`            | `src/FlinkNet.Rpc` (planned)              | ⬜          |
 | `flink-runtime`        | `src/FlinkNet.Runtime` (planned)          | ⬜          |
@@ -58,6 +58,7 @@ dotnet test
 | `org.apache.flink.api.java.typeutils.runtime` | `FlinkNet.Api.TypeUtils.Runtime` |
 | `org.apache.flink.configuration`          | `FlinkNet.Configuration`          |
 | `org.apache.flink.core.fs`                | `FlinkNet.Core.Fs`                |
+| `org.apache.flink.metrics`                | `FlinkNet.Metrics`                |
 | `org.apache.flink.core.memory`            | `FlinkNet.Core.Memory`            |
 | `org.apache.flink.types`                  | `FlinkNet.Types`                  |
 | `org.apache.flink.util`                   | `FlinkNet.Util`                   |
@@ -191,7 +192,15 @@ has a native C# equivalent:
      C# pattern for the erased/raw `ConfigOption` type), binary
      `read`/`write` once `core.memory` exists, then `core.fs` →
      `api.common.typeutils` (now unblocked by core.memory) → `core.io`.
-3. ⬜ `flink-metrics-core`, then `flink-datastream-api`.
+3. 🟨 `flink-metrics-core` — ✅ metrics API core: IMetric/MetricType,
+   ICounter (+Simple/ThreadSafe counters), IGauge, IHistogram +
+   HistogramStatistics, IMeter + MeterView, IView, ICharacterFilter,
+   IMetricGroup + UnregisteredMetricsGroup, MetricConfig, and the
+   reporter interfaces (IReporter/IMetricReporter/IScheduled/
+   AbstractReporter/IMetricReporterFactory). Deferred: events/ and
+   traces/ observability packages, LogicalScopeProvider consumers, and
+   the specialized operator/source/sink group interfaces (they follow
+   their subsystems). Then `flink-datastream-api`.
 4. ⬜ `flink-rpc` — replace Pekko/Akka with an in-process + TCP RPC layer
    (candidates: built-in sockets + System.Threading.Channels, or gRPC).
 5. ⬜ `flink-runtime` — scheduler, checkpointing, network stack (Netty →

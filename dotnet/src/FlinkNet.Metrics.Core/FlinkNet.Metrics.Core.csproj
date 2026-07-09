@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>FlinkNet metrics core. Port of the Apache Flink flink-metrics-core module.</Description>
+    <RootNamespace>FlinkNet</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FlinkNet.Annotations\FlinkNet.Annotations.csproj" />
+  </ItemGroup>
+
+</Project>
