@@ -55,7 +55,7 @@ permissions: read-all
 # user's home folder). It's important to notice that any file that is subject to caching should still
 # live in the mounted folder to ensure accessibility by the cache action.
 env:
-  MOUNTED_WORKING_DIR: /__w/flink/flink
+  MOUNTED_WORKING_DIR: /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
   CONTAINER_LOCAL_WORKING_DIR: /root/flink
   # The following two variables are used by the utility scripts for creating
   # and unpacking the build artifacts.
