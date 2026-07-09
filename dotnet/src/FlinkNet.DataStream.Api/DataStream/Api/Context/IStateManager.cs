@@ -25,7 +25,7 @@ namespace FlinkNet.DataStream.Api.Context;
 /// This is responsible for managing runtime information related to the state of the process
 /// function.
 ///
-/// <para>PORT NOTE: Java'"'"'s <c>Optional&lt;State&gt; getStateOptional(...)</c> maps to nullable
+/// <para>PORT NOTE: Java's <c>Optional&lt;State&gt; getStateOptional(...)</c> maps to nullable
 /// returns, per the porting conventions.</para>
 /// </summary>
 [Experimental]

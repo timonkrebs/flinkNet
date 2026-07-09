@@ -18,15 +18,24 @@
 
 using FlinkNet.Annotations;
 
-namespace FlinkNet.DataStream.Api.Extension.Window.Context;
+namespace FlinkNet.Core.Io;
 
-/// <summary>The <see cref="IWindowContext"/> for one input window processing.</summary>
-[Experimental]
-public interface IOneInputWindowContext<TIn> : IWindowContext
+/// <summary>
+/// An <see cref="InputStatus"/> indicates the availability of data from an asynchronous input.
+/// When asking an asynchronous input to produce data, it returns this status to indicate how to
+/// proceed.
+/// </summary>
+[PublicEvolving]
+public enum InputStatus
 {
-    /// <summary>Puts the record into the window's internal record storage.</summary>
-    void PutRecord(TIn record);
+    /// <summary>Indicator that more data is available and the input can be called immediately
+    /// again to produce more data.</summary>
+    MoreAvailable,
 
-    /// <summary>Retrieves all records from the window's internal record storage.</summary>
-    IEnumerable<TIn> GetAllRecords();
+    /// <summary>Indicator that no data is currently available, but more data will be available
+    /// in the future again.</summary>
+    NothingAvailable,
+
+    /// <summary>Indicator that the input has reached the end of data.</summary>
+    EndOfInput,
 }

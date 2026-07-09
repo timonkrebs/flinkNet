@@ -25,10 +25,11 @@ namespace FlinkNet.Tests.Configuration;
 /// <summary>
 /// This class contains tests for the configuration package.
 ///
-/// <para>PORT NOTES: the Java serialization round-trip is replaced by the copy constructor (binary
-/// serialization is not ported); <c>toMap</c> expectations use the legacy Flink list/map format
-/// instead of standard YAML (see ConfigurationUtils PORT NOTE); <c>testToFileWritableMap</c> is
-/// deferred together with <c>YamlParserUtils</c>.</para>
+/// <para>PORT NOTES: the Java serialization round-trip goes through
+/// <c>IIOReadableWritable.Write</c>/<c>Read</c> directly instead of
+/// <c>InstantiationUtil.createCopyWritable</c>; <c>toMap</c> expectations use the legacy Flink
+/// list/map format instead of standard YAML (see ConfigurationUtils PORT NOTE);
+/// <c>testToFileWritableMap</c> is deferred together with <c>YamlParserUtils</c>.</para>
 /// </summary>
 public class ConfigurationTest
 {
@@ -65,6 +66,40 @@ public class ConfigurationTest
         orig.SetBytes("bytes sequence", [1, 2, 3, 4, 5]);
 
         var copy = new FlinkNet.Configuration.Configuration(orig);
+        Assert.Equal("myvalue", copy.GetString("mykey", "null"));
+        Assert.Equal(100, copy.Get(GetIntConfigOption("mynumber"), 0));
+        Assert.Equal(478236947162389746L, copy.Get(GetLongConfigOption("longvalue"), 0L));
+        Assert.Equal(3.1415926f, copy.Get(GetFloatConfigOption("PI"), 3.1415926f), 0.0f);
+        Assert.Equal(Math.E, copy.Get(GetDoubleConfigOption("E"), 0.0), 0.0);
+        Assert.True(copy.Get(GetBooleanConfigOption("shouldbetrue"), false));
+        Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, copy.GetBytes("bytes sequence", null));
+
+        Assert.Equal(orig, copy);
+        Assert.Equal(orig.KeySet(), copy.KeySet());
+        Assert.Equal(orig.GetHashCode(), copy.GetHashCode());
+    }
+
+    /// <summary>This test checks the serialization of configuration objects and the getters,
+    /// mirroring Java's <c>testConfigurationSerializationAndGetters</c> with the binary
+    /// <c>Write</c>/<c>Read</c> round-trip.</summary>
+    [Fact]
+    public void TestConfigurationSerializationAndGetters()
+    {
+        var orig = new FlinkNet.Configuration.Configuration();
+        orig.SetString("mykey", "myvalue");
+        orig.Set(GetIntConfigOption("mynumber"), 100);
+        orig.Set(GetLongConfigOption("longvalue"), 478236947162389746L);
+        orig.Set(GetFloatConfigOption("PI"), 3.1415926f);
+        orig.Set(GetDoubleConfigOption("E"), Math.E);
+        orig.Set(GetBooleanConfigOption("shouldbetrue"), true);
+        orig.SetBytes("bytes sequence", [1, 2, 3, 4, 5]);
+
+        var output = new FlinkNet.Core.Memory.DataOutputSerializer(64);
+        orig.Write(output);
+
+        var copy = new FlinkNet.Configuration.Configuration();
+        copy.Read(new FlinkNet.Core.Memory.DataInputDeserializer(output.GetCopyOfBuffer()));
+
         Assert.Equal("myvalue", copy.GetString("mykey", "null"));
         Assert.Equal(100, copy.Get(GetIntConfigOption("mynumber"), 0));
         Assert.Equal(478236947162389746L, copy.Get(GetLongConfigOption("longvalue"), 0L));

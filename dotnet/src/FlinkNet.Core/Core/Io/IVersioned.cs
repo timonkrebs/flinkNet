@@ -18,15 +18,16 @@
 
 using FlinkNet.Annotations;
 
-namespace FlinkNet.DataStream.Api.Extension.Window.Context;
+namespace FlinkNet.Core.Io;
 
-/// <summary>The <see cref="IWindowContext"/> for one input window processing.</summary>
-[Experimental]
-public interface IOneInputWindowContext<TIn> : IWindowContext
+/// <summary>
+/// This interface is implemented by classes that provide a version number. Versions numbers can
+/// be used to differentiate between evolving classes.
+/// </summary>
+[PublicEvolving]
+public interface IVersioned
 {
-    /// <summary>Puts the record into the window's internal record storage.</summary>
-    void PutRecord(TIn record);
-
-    /// <summary>Retrieves all records from the window's internal record storage.</summary>
-    IEnumerable<TIn> GetAllRecords();
+    /// <summary>Returns the version number of the object. Versions numbers can be used to
+    /// differentiate evolving classes.</summary>
+    int Version { get; }
 }

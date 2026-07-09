@@ -25,7 +25,7 @@ namespace FlinkNet.DataStream.Api.Extension.Window.Context;
 /// This interface enables retrieving and updating information in a window, such as the window
 /// start time, end time, and window state.
 ///
-/// <para>PORT NOTE: Java'"'"'s <c>Optional&lt;State&gt; getWindowState(...)</c> maps to nullable
+/// <para>PORT NOTE: Java's <c>Optional&lt;State&gt; getWindowState(...)</c> maps to nullable
 /// returns, per the porting conventions.</para>
 /// </summary>
 [Experimental]

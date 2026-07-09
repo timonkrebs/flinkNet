@@ -57,7 +57,7 @@ public interface IGlobalStream<T> : IDataStream
 }
 
 /// <summary>This interface represents a configurable <see cref="IGlobalStream{T}"/>. (PORT NOTE:
-/// hoisted from Java'"'"'s nested interface.)</summary>
+/// hoisted from Java's nested interface.)</summary>
 [Experimental]
 public interface IProcessConfigurableAndGlobalStream<T>
     : IGlobalStream<T>, IProcessConfigurable<IProcessConfigurableAndGlobalStream<T>>
@@ -66,7 +66,7 @@ public interface IProcessConfigurableAndGlobalStream<T>
 
 /// <summary>This interface represents a combination of two <see cref="IGlobalStream{T}"/>s. It
 /// will be used as the return value of operations with two outputs. (PORT NOTE: hoisted from
-/// Java'"'"'s nested interface.)</summary>
+/// Java's nested interface.)</summary>
 [Experimental]
 public interface ITwoGlobalStreams<T1, T2>
 {

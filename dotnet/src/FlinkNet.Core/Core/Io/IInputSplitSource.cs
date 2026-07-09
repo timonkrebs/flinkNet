@@ -18,15 +18,22 @@
 
 using FlinkNet.Annotations;
 
-namespace FlinkNet.DataStream.Api.Extension.Window.Context;
+namespace FlinkNet.Core.Io;
 
-/// <summary>The <see cref="IWindowContext"/> for one input window processing.</summary>
-[Experimental]
-public interface IOneInputWindowContext<TIn> : IWindowContext
+/// <summary>
+/// InputSplitSources create <see cref="IInputSplit"/>s that define portions of data to be
+/// produced by input formats.
+/// </summary>
+/// <typeparam name="T">The type of the input splits created by the source.</typeparam>
+[Public]
+public interface IInputSplitSource<T>
+    where T : IInputSplit
 {
-    /// <summary>Puts the record into the window's internal record storage.</summary>
-    void PutRecord(TIn record);
+    /// <summary>Computes the input splits. The given minimum number of splits is a hint as to
+    /// how many splits are desired.</summary>
+    /// <param name="minNumSplits">Number of minimal input splits, as a hint.</param>
+    T[] CreateInputSplits(int minNumSplits);
 
-    /// <summary>Retrieves all records from the window's internal record storage.</summary>
-    IEnumerable<TIn> GetAllRecords();
+    /// <summary>Returns the assigner for the input splits.</summary>
+    IInputSplitAssigner GetInputSplitAssigner(T[] inputSplits);
 }

@@ -77,6 +77,7 @@ dotnet test
 | `org.apache.flink.configuration`          | `FlinkNet.Configuration`          |
 | `org.apache.flink.datastream.api[.*]`     | `FlinkNet.DataStream.Api[.*]`     |
 | `org.apache.flink.core.fs`                | `FlinkNet.Core.Fs`                |
+| `org.apache.flink.core.io`                | `FlinkNet.Core.Io`                |
 | `org.apache.flink.metrics`                | `FlinkNet.Metrics`                |
 | `org.apache.flink.core.memory`            | `FlinkNet.Core.Memory`            |
 | `org.apache.flink.types`                  | `FlinkNet.Types`                  |
@@ -204,13 +205,24 @@ has a native C# equivalent:
      `FSDataInput/OutputStream` over `System.IO.Stream`,
      `IFileStatus`/`IBlockLocation`, and the full `LocalFileSystem`.
      `StringUtils` DataView string I/O unblocked and added.
-   - ⬜ next slices: `core.io` (IOReadableWritable, input splits),
-     option catalogs (`CoreOptions`, `TaskManagerOptions`, ...) as
-     their subsystems are ported,
+   - ✅ core.io: `IIOReadableWritable`, `IVersioned`,
+     `ISimpleVersionedSerializer` + `SimpleVersionedSerialization`
+     (version+length headers, stream and byte[] forms),
+     `VersionMismatchException`, `InputStatus`, input splits
+     (`IInputSplit`/`IInputSplitSource`/`IInputSplitAssigner`,
+     `GenericInputSplit`, `LocatableInputSplit`). Configuration and
+     DelegatingConfiguration now implement the binary `Read`/`Write`
+     wire format (type tags 0–6, StringValue-encoded strings);
+     UnmodifiableConfiguration blocks `Read` (documented deviation).
+     Deferred: `VersionedIOReadableWritable`/
+     `PostVersionedIOReadableWritable` (follow with state machinery),
+     `SimpleVersionedSerializerTypeSerializerProxy` (needs
+     TypeSerializer snapshot subsystem), split assigners (runtime).
+   - ⬜ next slices: option catalogs (`CoreOptions`,
+     `TaskManagerOptions`, ...) as their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
-     C# pattern for the erased/raw `ConfigOption` type), binary
-     `read`/`write` once `core.memory` exists, then `core.fs` →
-     `api.common.typeutils` (now unblocked by core.memory) → `core.io`.
+     C# pattern for the erased/raw `ConfigOption` type), serializer
+     snapshots (`TypeSerializerSnapshot` machinery), `Value` types.
 3. 🟨 `flink-metrics-core` — ✅ metrics API core: IMetric/MetricType,
    ICounter (+Simple/ThreadSafe counters), IGauge, IHistogram +
    HistogramStatistics, IMeter + MeterView, IView, ICharacterFilter,

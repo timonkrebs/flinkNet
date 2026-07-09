@@ -17,16 +17,22 @@
  */
 
 using FlinkNet.Annotations;
+using FlinkNet.Core.Memory;
 
-namespace FlinkNet.DataStream.Api.Extension.Window.Context;
+namespace FlinkNet.Core.Io;
 
-/// <summary>The <see cref="IWindowContext"/> for one input window processing.</summary>
-[Experimental]
-public interface IOneInputWindowContext<TIn> : IWindowContext
+/// <summary>
+/// This interface must be implemented by every class whose objects have to be serialized to
+/// their binary representation and vice-versa.
+/// </summary>
+[Public]
+public interface IIOReadableWritable
 {
-    /// <summary>Puts the record into the window's internal record storage.</summary>
-    void PutRecord(TIn record);
+    /// <summary>Writes the object's internal data to the given data output view.</summary>
+    /// <param name="output">the output view to receive the data.</param>
+    void Write(IDataOutputView output);
 
-    /// <summary>Retrieves all records from the window's internal record storage.</summary>
-    IEnumerable<TIn> GetAllRecords();
+    /// <summary>Reads the object's internal data from the given data input view.</summary>
+    /// <param name="input">the input view to read the data from</param>
+    void Read(IDataInputView input);
 }

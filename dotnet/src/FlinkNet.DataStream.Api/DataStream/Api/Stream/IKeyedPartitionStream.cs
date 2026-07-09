@@ -102,7 +102,7 @@ public interface IKeyedPartitionStream<TKey, T> : IDataStream
 }
 
 /// <summary>This interface represents a configurable
-/// <see cref="IKeyedPartitionStream{TKey,T}"/>. (PORT NOTE: hoisted from Java'"'"'s nested
+/// <see cref="IKeyedPartitionStream{TKey,T}"/>. (PORT NOTE: hoisted from Java's nested
 /// interface.)</summary>
 [Experimental]
 public interface IProcessConfigurableAndKeyedPartitionStream<TKey, T>
@@ -113,7 +113,7 @@ public interface IProcessConfigurableAndKeyedPartitionStream<TKey, T>
 
 /// <summary>This interface represents a combination of two
 /// <see cref="IKeyedPartitionStream{TKey,T}"/>s. It will be used as the return value of
-/// operations with two outputs. (PORT NOTE: hoisted from Java'"'"'s nested interface.)</summary>
+/// operations with two outputs. (PORT NOTE: hoisted from Java's nested interface.)</summary>
 [Experimental]
 public interface IProcessConfigurableAndTwoKeyedPartitionStreams<TKey, T1, T2>
     : IProcessConfigurable<IProcessConfigurableAndTwoKeyedPartitionStreams<TKey, T1, T2>>

@@ -26,16 +26,14 @@ namespace FlinkNet.Configuration;
 ///
 /// <para>PORT NOTES:</para>
 /// <list type="bullet">
-///   <item><description>The Java class extends <c>ExecutionConfig.GlobalJobParameters</c> and
-///   implements <c>IOReadableWritable</c>/<c>Serializable</c>/<c>Cloneable</c>; those carriers are
-///   not ported yet. The binary <c>read</c>/<c>write</c> methods (deprecated in Flink) will come
-///   with the <c>core.memory</c> increment if still needed.</description></item>
+///   <item><description>The Java class extends <c>ExecutionConfig.GlobalJobParameters</c>, which
+///   is not ported yet.</description></item>
 ///   <item><description>Java logs a warning when a deprecated key is used; the port is silent
 ///   until a logging abstraction is introduced.</description></item>
 /// </list>
 /// </summary>
 [Public]
-public class Configuration : IReadableConfig, IWritableConfig
+public class Configuration : IReadableConfig, IWritableConfig, Core.Io.IIOReadableWritable
 {
     /// <summary>
     /// Stores the concrete key/value pairs of this configuration object.
@@ -515,6 +513,120 @@ public class Configuration : IReadableConfig, IWritableConfig
             }
         }
         return false;
+    }
+
+    // --------------------------------------------------------------------------------------------
+    //  Serialization
+    // --------------------------------------------------------------------------------------------
+
+    private const byte TypeString = 0;
+    private const byte TypeInt = 1;
+    private const byte TypeLong = 2;
+    private const byte TypeBoolean = 3;
+    private const byte TypeFloat = 4;
+    private const byte TypeDouble = 5;
+    private const byte TypeBytes = 6;
+
+    /// <summary>Reads key/value pairs written with <see cref="Write"/>. This binary format only
+    /// supports the primitive value types (like Java's deprecated read/write pair).</summary>
+    public virtual void Read(Core.Memory.IDataInputView input)
+    {
+        lock (ConfData)
+        {
+            int numberOfProperties = input.ReadInt();
+
+            for (int i = 0; i < numberOfProperties; i++)
+            {
+                string key = Types.StringValue.ReadString(input)!;
+                object value;
+
+                byte type = input.ReadByte();
+                switch (type)
+                {
+                    case TypeString:
+                        value = Types.StringValue.ReadString(input)!;
+                        break;
+                    case TypeInt:
+                        value = input.ReadInt();
+                        break;
+                    case TypeLong:
+                        value = input.ReadLong();
+                        break;
+                    case TypeFloat:
+                        value = input.ReadFloat();
+                        break;
+                    case TypeDouble:
+                        value = input.ReadDouble();
+                        break;
+                    case TypeBoolean:
+                        value = input.ReadBoolean();
+                        break;
+                    case TypeBytes:
+                        byte[] bytes = new byte[input.ReadInt()];
+                        input.ReadFully(bytes);
+                        value = bytes;
+                        break;
+                    default:
+                        throw new IOException(
+                            $"Unrecognized type: {type}. This method is deprecated and might not"
+                                + " work for all supported types.");
+                }
+
+                ConfData[key] = value;
+            }
+        }
+    }
+
+    /// <summary>Writes the key/value pairs in a simple binary format; see <see cref="Read"/>.</summary>
+    public virtual void Write(Core.Memory.IDataOutputView output)
+    {
+        lock (ConfData)
+        {
+            output.WriteInt(ConfData.Count);
+
+            foreach (KeyValuePair<string, object> entry in ConfData)
+            {
+                Types.StringValue.WriteString(entry.Key, output);
+                object val = entry.Value;
+
+                switch (val)
+                {
+                    case string s:
+                        output.Write(TypeString);
+                        Types.StringValue.WriteString(s, output);
+                        break;
+                    case int i:
+                        output.Write(TypeInt);
+                        output.WriteInt(i);
+                        break;
+                    case long l:
+                        output.Write(TypeLong);
+                        output.WriteLong(l);
+                        break;
+                    case float f:
+                        output.Write(TypeFloat);
+                        output.WriteFloat(f);
+                        break;
+                    case double d:
+                        output.Write(TypeDouble);
+                        output.WriteDouble(d);
+                        break;
+                    case byte[] bytes:
+                        output.Write(TypeBytes);
+                        output.WriteInt(bytes.Length);
+                        output.Write(bytes);
+                        break;
+                    case bool b:
+                        output.Write(TypeBoolean);
+                        output.WriteBoolean(b);
+                        break;
+                    default:
+                        throw new ArgumentException(
+                            "Unrecognized type. This method is deprecated and might not work for"
+                                + " all supported types.");
+                }
+            }
+        }
     }
 
     // --------------------------------------------------------------------------------------------

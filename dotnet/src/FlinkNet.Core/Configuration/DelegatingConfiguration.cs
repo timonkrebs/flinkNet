@@ -23,16 +23,17 @@ namespace FlinkNet.Configuration;
 /// <summary>
 /// A configuration that manages a subset of keys with a common prefix from a given configuration.
 ///
-/// <para>PORT NOTE: the binary <c>read</c>/<c>write</c> methods and <c>addAllToProperties</c>
-/// are deferred together with their carriers (see Configuration).</para>
+/// <para>PORT NOTE: <c>addAllToProperties</c> is deferred together with its carrier
+/// (see Configuration).</para>
 /// </summary>
 public sealed class DelegatingConfiguration : Configuration
 {
     /// <summary>The configuration actually storing the data.</summary>
     private readonly Configuration _backingConfig;
 
-    /// <summary>The prefix key by which keys for this config are marked.</summary>
-    private readonly string _prefix;
+    /// <summary>The prefix key by which keys for this config are marked.
+    /// Not readonly because <see cref="Read"/> replaces it, as in Java.</summary>
+    private string _prefix;
 
     // --------------------------------------------------------------------------------------------
 
@@ -164,6 +165,20 @@ public sealed class DelegatingConfiguration : Configuration
 
     protected internal override void SetValueInternal<T>(string key, T value, bool canBePrefixMap) =>
         _backingConfig.SetValueInternal(_prefix + key, value, canBePrefixMap);
+
+    // --------------------------------------------------------------------------------------------
+
+    public override void Read(Core.Memory.IDataInputView input)
+    {
+        _prefix = input.ReadUTF();
+        _backingConfig.Read(input);
+    }
+
+    public override void Write(Core.Memory.IDataOutputView output)
+    {
+        output.WriteUTF(_prefix);
+        _backingConfig.Write(output);
+    }
 
     // --------------------------------------------------------------------------------------------
 

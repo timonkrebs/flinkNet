@@ -18,15 +18,29 @@
 
 using FlinkNet.Annotations;
 
-namespace FlinkNet.DataStream.Api.Extension.Window.Context;
+namespace FlinkNet.Core.Io;
 
-/// <summary>The <see cref="IWindowContext"/> for one input window processing.</summary>
-[Experimental]
-public interface IOneInputWindowContext<TIn> : IWindowContext
+/// <summary>This exception signals that incompatible versions have been found during
+/// serialization.</summary>
+[PublicEvolving]
+public class VersionMismatchException : IOException
 {
-    /// <summary>Puts the record into the window's internal record storage.</summary>
-    void PutRecord(TIn record);
+    public VersionMismatchException()
+    {
+    }
 
-    /// <summary>Retrieves all records from the window's internal record storage.</summary>
-    IEnumerable<TIn> GetAllRecords();
+    public VersionMismatchException(string message)
+        : base(message)
+    {
+    }
+
+    public VersionMismatchException(string message, Exception cause)
+        : base(message, cause)
+    {
+    }
+
+    public VersionMismatchException(Exception cause)
+        : base(cause.Message, cause)
+    {
+    }
 }

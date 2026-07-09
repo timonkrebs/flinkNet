@@ -18,15 +18,15 @@
 
 using FlinkNet.Annotations;
 
-namespace FlinkNet.DataStream.Api.Extension.Window.Context;
+namespace FlinkNet.Core.Io;
 
-/// <summary>The <see cref="IWindowContext"/> for one input window processing.</summary>
-[Experimental]
-public interface IOneInputWindowContext<TIn> : IWindowContext
+/// <summary>
+/// This interface must be implemented by all kind of input splits that can be assigned to input
+/// formats.
+/// </summary>
+[Public]
+public interface IInputSplit
 {
-    /// <summary>Puts the record into the window's internal record storage.</summary>
-    void PutRecord(TIn record);
-
-    /// <summary>Retrieves all records from the window's internal record storage.</summary>
-    IEnumerable<TIn> GetAllRecords();
+    /// <summary>Returns the number of this input split.</summary>
+    int SplitNumber { get; }
 }

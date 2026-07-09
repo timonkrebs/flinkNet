@@ -24,7 +24,7 @@ namespace FlinkNet.DataStream.Api.Stream;
 /// <summary>
 /// The non-generic base of <see cref="IProcessConfigurable{T}"/>.
 ///
-/// <para>PORT NOTE: stands in for Java'"'"'s <c>ProcessConfigurable&lt;?&gt;</c> wildcard, which C#
+/// <para>PORT NOTE: stands in for Java's <c>ProcessConfigurable&lt;?&gt;</c> wildcard, which C#
 /// cannot express for a self-referential generic.</para>
 /// </summary>
 [Experimental]

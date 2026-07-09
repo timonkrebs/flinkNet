@@ -62,6 +62,12 @@ public class UnmodifiableConfiguration : Configuration
         return false;
     }
 
+    /// <summary>
+    /// PORT NOTE: Java does not override <c>read</c>, leaving a mutability hole; the port
+    /// blocks it, consistent with the documented intent of the class.
+    /// </summary>
+    public override void Read(Core.Memory.IDataInputView input) => Error();
+
     private static void Error() =>
         throw new NotSupportedException(
             "The configuration is unmodifiable; its contents cannot be changed.");

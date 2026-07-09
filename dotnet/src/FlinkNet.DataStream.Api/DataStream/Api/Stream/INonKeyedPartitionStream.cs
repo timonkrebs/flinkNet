@@ -72,7 +72,7 @@ public interface INonKeyedPartitionStream<T> : IDataStream
 }
 
 /// <summary>This interface represents a configurable <see cref="INonKeyedPartitionStream{T}"/>.
-/// (PORT NOTE: hoisted from Java'"'"'s nested interface.)</summary>
+/// (PORT NOTE: hoisted from Java's nested interface.)</summary>
 [Experimental]
 public interface IProcessConfigurableAndNonKeyedPartitionStream<T>
     : INonKeyedPartitionStream<T>,
@@ -82,7 +82,7 @@ public interface IProcessConfigurableAndNonKeyedPartitionStream<T>
 
 /// <summary>This interface represents a combination of two
 /// <see cref="INonKeyedPartitionStream{T}"/>s. It will be used as the return value of operations
-/// with two outputs. (PORT NOTE: hoisted from Java'"'"'s nested interface.)</summary>
+/// with two outputs. (PORT NOTE: hoisted from Java's nested interface.)</summary>
 [Experimental]
 public interface IProcessConfigurableAndTwoNonKeyedPartitionStream<TOut1, TOut2>
     : IProcessConfigurable<IProcessConfigurableAndTwoNonKeyedPartitionStream<TOut1, TOut2>>
