@@ -131,6 +131,24 @@ public class DelegatingConfigurationTest
         Assert.Equal(expected, dc.ToMap());
     }
 
+    /// <summary>Values must be escaped exactly once (PORT NOTE: Java escapes them a second
+    /// time on the delegating layer; see DelegatingConfiguration.ToFileWritableMap).</summary>
+    [Fact]
+    public void TestDelegationConfigurationToFileWritableMapEscapesOnce()
+    {
+        var conf = new FlinkNet.Configuration.Configuration();
+        conf.SetString("prefix.star", "*");
+        conf.SetString("prefix.plain", "value");
+        var dc = new DelegatingConfiguration(conf, "prefix.");
+
+        var expected = new Dictionary<string, string>
+        {
+            { "star", "'*'" },
+            { "plain", "value" },
+        };
+        Assert.Equal(expected, dc.ToFileWritableMap());
+    }
+
     [Fact]
     public void TestSetReturnsDelegatingConfiguration()
     {

@@ -394,8 +394,18 @@ public class Path : IComparable<Path>
             && char.IsAsciiLetter(path[start]);
     }
 
-    /// <summary>Creates a path for the given local file.</summary>
-    public static Path FromLocalFile(FileInfo file) => new(new Uri(file.FullName).AbsolutePath);
+    /// <summary>Creates a path for the given local file, as a file URI like Java's
+    /// <c>new Path(file.toURI())</c>.</summary>
+    public static Path FromLocalFile(FileInfo file) =>
+        new("file:" + AbsoluteUriPath(file.FullName));
+
+    /// <summary>Renders a local filesystem path the way Java's <c>File.toURI().getPath()</c>
+    /// does: forward slashes with a leading slash ("/C:/tmp/x" on Windows).</summary>
+    internal static string AbsoluteUriPath(string localPath)
+    {
+        string path = localPath.Replace('\\', '/');
+        return path.StartsWith('/') ? path : "/" + path;
+    }
 
     // ------------------------------------------------------------------------
     //  Legacy Serialization

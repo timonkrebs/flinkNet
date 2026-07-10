@@ -56,4 +56,18 @@ public class DataInputDeserializerTest
         byte[] bytesForRead = [];
         Assert.Equal(0, dis.Read(bytesForRead, 0, 0)); // do not throw when read with len 0
     }
+
+    /// <summary>PORT NOTE: Java's readLine drops the final character of an unterminated
+    /// last line; the port keeps it (see DataInputDeserializer.ReadLine).</summary>
+    [Fact]
+    public void TestReadLine()
+    {
+        byte[] bytes = "first\r\nsecond\nlast"u8.ToArray();
+        var dis = new DataInputDeserializer(bytes, 0, bytes.Length);
+
+        Assert.Equal("first", dis.ReadLine());
+        Assert.Equal("second", dis.ReadLine());
+        Assert.Equal("last", dis.ReadLine());
+        Assert.Null(dis.ReadLine());
+    }
 }

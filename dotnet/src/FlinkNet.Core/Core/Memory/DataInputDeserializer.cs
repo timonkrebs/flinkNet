@@ -158,11 +158,17 @@ public class DataInputDeserializer : IDataInputView
         if (_position < _end)
         {
             // read until a newline is found
+            // PORT NOTE: Java's loop guard consumes the final character of an unterminated
+            // last line without appending it (upstream bug); the port keeps it.
             var bld = new StringBuilder();
             char curr = (char)ReadUnsignedByte();
-            while (_position < _end && curr != '\n')
+            while (curr != '\n')
             {
                 bld.Append(curr);
+                if (_position >= _end)
+                {
+                    break;
+                }
                 curr = (char)ReadUnsignedByte();
             }
             // trim a trailing carriage return

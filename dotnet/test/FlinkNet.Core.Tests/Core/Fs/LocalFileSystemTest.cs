@@ -157,6 +157,17 @@ public class LocalFileSystemTest : IDisposable
             () => FileSystem.Get(new Path("nofs://host/some/path")));
     }
 
+    /// <summary>A local URI carrying an authority ("file://tmp/out", missing a slash) must be
+    /// rejected with a hint instead of silently operating on the wrong path.</summary>
+    [Fact]
+    public void TestGetRejectsLocalUriWithAuthority()
+    {
+        IOException e = Assert.Throws<IOException>(
+            () => FileSystem.Get(new Path("file://tmp/out")));
+        Assert.Contains("authority 'tmp'", e.Message);
+        Assert.Contains("file:///tmp/out", e.Message);
+    }
+
     [Fact]
     public void TestMkdirsReturnsFalseOnExistingFile()
     {

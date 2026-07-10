@@ -132,7 +132,10 @@ public sealed class DelegatingConfiguration : Configuration
         {
             if (entry.Key.StartsWith(_prefix, StringComparison.Ordinal))
             {
-                prefixed[entry.Key[_prefix.Length..]] = YamlParserUtils.ToYamlString(entry.Value);
+                // PORT NOTE: Java escapes the backing values a second time here (upstream
+                // bug: a delegated "*" round-trips through a file as "'*'"); the backing
+                // ToFileWritableMap already escaped them, so pass them through like ToMap.
+                prefixed[entry.Key[_prefix.Length..]] = entry.Value;
             }
         }
         return prefixed;

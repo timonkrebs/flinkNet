@@ -225,4 +225,20 @@ public class PathTest
             Assert.Equal(path, restored);
         }
     }
+
+    /// <summary>FromLocalFile yields a file URI with an absolute path, like Java's
+    /// <c>new Path(file.toURI())</c>.</summary>
+    [Fact]
+    public void TestFromLocalFile()
+    {
+        string local = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "some_file");
+        Path path = Path.FromLocalFile(new FileInfo(local));
+
+        Assert.Equal("file", path.ToUri().Scheme);
+        Assert.True(path.IsAbsolute());
+        Assert.Equal("some_file", path.GetName());
+        Assert.Equal(
+            local.Replace('\\', '/').TrimStart('/'),
+            path.GetPath().TrimStart('/'));
+    }
 }

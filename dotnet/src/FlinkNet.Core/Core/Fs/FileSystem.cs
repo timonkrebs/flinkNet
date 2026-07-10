@@ -80,9 +80,20 @@ public abstract class FileSystem
     /// <exception cref="IOException">thrown if no file system can be identified for the scheme.</exception>
     public static FileSystem Get(Path path)
     {
-        string? scheme = path.ToUri().Scheme;
+        PathUri uri = path.ToUri();
+        string? scheme = uri.Scheme;
         if (scheme is null or "file")
         {
+            // a local URI carrying an authority ("file://tmp/out") would silently redirect
+            // the operation to the wrong path; Java rejects it with a hint
+            if (!string.IsNullOrEmpty(uri.Authority))
+            {
+                string supposedUri = "file:///" + uri.Authority + uri.UriPath;
+                throw new IOException(
+                    "Found local file path with authority '" + uri.Authority + "' in path '"
+                        + path + "'. Hint: Did you forget a slash? (correct path would be '"
+                        + supposedUri + "')");
+            }
             return LocalFileSystem.SharedInstance;
         }
         lock (RegistryLock)
