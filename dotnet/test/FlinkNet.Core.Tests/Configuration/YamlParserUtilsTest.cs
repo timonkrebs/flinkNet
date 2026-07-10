@@ -147,6 +147,26 @@ public class YamlParserUtilsTest : IDisposable
         Assert.Equal("['*', '123', 'true']", YamlParserUtils.ToYamlString(o3));
     }
 
+    /// <summary>Flow indicators terminate plain scalars inside flow collections, so list and
+    /// map elements containing them must be quoted to survive a round-trip.</summary>
+    [Fact]
+    public void TestToYamlStringQuotesFlowIndicatorsInsideCollections()
+    {
+        object list = new List<string> { "a,b", "c" };
+        string dumped = YamlParserUtils.ToYamlString(list);
+        Assert.Equal("['a,b', c]", dumped);
+
+        List<object?>? parsed = YamlParserUtils.ConvertToObject<List<object?>>(dumped);
+        Assert.NotNull(parsed);
+        Assert.Equal(new List<object?> { "a,b", "c" }, parsed);
+
+        object map = new Dictionary<string, string> { { "k", "v1,v2" } };
+        Assert.Equal("{k: 'v1,v2'}", YamlParserUtils.ToYamlString(map));
+
+        // a comma in a plain top-level scalar needs no quotes (block context)
+        Assert.Equal("a,b", YamlParserUtils.ToYamlString("a,b"));
+    }
+
     [Fact]
     public void TestConvertToObject()
     {

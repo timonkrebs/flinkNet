@@ -24,25 +24,26 @@ namespace FlinkNet.Util;
 /// Utility class for implementing CoGroupedStream in DataStream V1, as well as two-input window
 /// operations in DataStream V2.
 /// </summary>
-// PORT NOTE: Like the Java original, the union discriminates its sides by null-ness. With
-// value-type type arguments IsOne/IsTwo cannot distinguish an unset side from default(T); use
-// reference types or nullable value types (e.g. TaggedUnion<int?, ...>) where that distinction
-// matters.
+// PORT NOTE: Java discriminates the sides by null-ness, which type erasure makes reliable
+// there; with .NET value-type type arguments default(T) is not null, so the port stores the
+// active side explicitly.
 [Internal]
 public class TaggedUnion<T1, T2>
 {
     private readonly T1? _one;
     private readonly T2? _two;
+    private readonly bool _isOne;
 
-    private TaggedUnion(T1? one, T2? two)
+    private TaggedUnion(T1? one, T2? two, bool isOne)
     {
         _one = one;
         _two = two;
+        _isOne = isOne;
     }
 
-    public bool IsOne => _one != null;
+    public bool IsOne => _isOne;
 
-    public bool IsTwo => _two != null;
+    public bool IsTwo => !_isOne;
 
     public T1 GetOne()
     {
@@ -56,12 +57,12 @@ public class TaggedUnion<T1, T2>
 
     public static TaggedUnion<T1, T2> One(T1 one)
     {
-        return new TaggedUnion<T1, T2>(one, default);
+        return new TaggedUnion<T1, T2>(one, default, isOne: true);
     }
 
     public static TaggedUnion<T1, T2> Two(T2 two)
     {
-        return new TaggedUnion<T1, T2>(default, two);
+        return new TaggedUnion<T1, T2>(default, two, isOne: false);
     }
 
     public override bool Equals(object? obj)
@@ -76,13 +77,15 @@ public class TaggedUnion<T1, T2>
             return false;
         }
 
-        return Equals(_one, other._one) && Equals(_two, other._two);
+        return _isOne == other._isOne
+            && Equals(_one, other._one)
+            && Equals(_two, other._two);
     }
 
     // PORT NOTE: The Java class overrides equals without hashCode; C# requires the pair, so the
     // matching hash code is provided here.
     public override int GetHashCode()
     {
-        return HashCode.Combine(_one, _two);
+        return HashCode.Combine(_isOne, _one, _two);
     }
 }

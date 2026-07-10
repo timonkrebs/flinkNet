@@ -180,6 +180,17 @@ public class LocalFileSystem : FileSystem
             }
         }
 
+        // Files.move onto the very same path is a successful no-op; without this check the
+        // replace-existing handling below would delete the source before moving it
+        if (string.Equals(
+                System.IO.Path.GetFullPath(srcPath),
+                System.IO.Path.GetFullPath(dstPath),
+                StringComparison.Ordinal)
+            && (File.Exists(srcPath) || Directory.Exists(srcPath)))
+        {
+            return true;
+        }
+
         // Java moves with REPLACE_EXISTING: an existing destination file or empty directory
         // is replaced, while the regular "move failed" conditions come back as false
         try

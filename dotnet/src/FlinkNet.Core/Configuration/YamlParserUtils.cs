@@ -308,7 +308,7 @@ public static partial class YamlParserUtils
     //  Dumping
     // --------------------------------------------------------------------------------------------
 
-    private static void EmitFlow(object? value, StringBuilder builder)
+    private static void EmitFlow(object? value, StringBuilder builder, bool inFlowCollection = false)
     {
         switch (value)
         {
@@ -316,19 +316,19 @@ public static partial class YamlParserUtils
                 builder.Append("null");
                 break;
             case string s:
-                builder.Append(FormatScalar(s));
+                builder.Append(FormatScalar(s, inFlowCollection));
                 break;
             case bool b:
                 builder.Append(b ? "true" : "false");
                 break;
             case TimeSpan duration:
-                builder.Append(FormatScalar(TimeUtils.FormatWithHighestUnit(duration)));
+                builder.Append(FormatScalar(TimeUtils.FormatWithHighestUnit(duration), inFlowCollection));
                 break;
             case MemorySize memorySize:
-                builder.Append(FormatScalar(memorySize.ToString()));
+                builder.Append(FormatScalar(memorySize.ToString(), inFlowCollection));
                 break;
             case Enum e:
-                builder.Append(FormatScalar(e.ToString()));
+                builder.Append(FormatScalar(e.ToString(), inFlowCollection));
                 break;
             case System.Collections.IDictionary rawMap:
                 EmitFlowMapEntries(EnumerateEntries(rawMap), builder);
@@ -348,7 +348,7 @@ public static partial class YamlParserUtils
                             builder.Append(", ");
                         }
                         first = false;
-                        EmitFlow(element, builder);
+                        EmitFlow(element, builder, inFlowCollection: true);
                     }
                     builder.Append(']');
                     break;
@@ -371,9 +371,9 @@ public static partial class YamlParserUtils
                 builder.Append(", ");
             }
             first = false;
-            EmitFlow(key, builder);
+            EmitFlow(key, builder, inFlowCollection: true);
             builder.Append(": ");
-            EmitFlow(entryValue, builder);
+            EmitFlow(entryValue, builder, inFlowCollection: true);
         }
         builder.Append('}');
     }
@@ -464,7 +464,7 @@ public static partial class YamlParserUtils
     /// quotes are preferred (matching SnakeYAML); double quotes are used when the value contains
     /// characters that single quoting cannot represent.
     /// </summary>
-    private static string FormatScalar(string value)
+    private static string FormatScalar(string value, bool inFlowCollection = false)
     {
         if (value.Any(c => char.IsControl(c) && c != '\t'))
         {
@@ -503,10 +503,10 @@ public static partial class YamlParserUtils
             return escaped.Append('"').ToString();
         }
 
-        return NeedsQuoting(value) ? "'" + value.Replace("'", "''") + "'" : value;
+        return NeedsQuoting(value, inFlowCollection) ? "'" + value.Replace("'", "''") + "'" : value;
     }
 
-    private static bool NeedsQuoting(string value)
+    private static bool NeedsQuoting(string value, bool inFlowCollection)
     {
         if (value.Length == 0)
         {
@@ -523,6 +523,12 @@ public static partial class YamlParserUtils
         }
         // leading YAML indicator characters
         if ("[]{}#&*!|>'\"%@`,-?:".Contains(value[0]))
+        {
+            return true;
+        }
+        // inside a flow collection the flow indicators terminate a plain scalar anywhere,
+        // so "a,b" would otherwise be read back as two elements
+        if (inFlowCollection && value.IndexOfAny([',', '[', ']', '{', '}']) >= 0)
         {
             return true;
         }

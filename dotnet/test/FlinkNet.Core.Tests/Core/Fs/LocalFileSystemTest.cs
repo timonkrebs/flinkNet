@@ -230,6 +230,24 @@ public class LocalFileSystemTest : IDisposable
         Assert.True(lfs.Exists(dst));
     }
 
+    /// <summary>Files.move onto the very same path is a successful no-op; the rename must
+    /// not delete the source while clearing the "existing destination".</summary>
+    [Fact]
+    public void TestRenameOntoItselfIsANoOp()
+    {
+        FileSystem lfs = FileSystem.GetLocalFileSystem();
+
+        Path dir = TempPath("self_dir");
+        Assert.True(lfs.Mkdirs(dir));
+        Assert.True(lfs.Rename(dir, dir));
+        Assert.True(lfs.Exists(dir));
+
+        Path file = TempPath("self_file");
+        File.WriteAllText(file.GetPath(), "content");
+        Assert.True(lfs.Rename(file, file));
+        Assert.Equal("content", File.ReadAllText(file.GetPath()));
+    }
+
     /// <summary>A non-empty destination directory is a regular move failure (Java's
     /// DirectoryNotEmptyException), reported as false.</summary>
     [Fact]
