@@ -397,13 +397,26 @@ public static partial class YamlParserUtils
             object? value = entry.Value;
             if (TryAsNestedMap(value, out Dictionary<string, object?>? nested))
             {
+                // an empty block mapping has no representation; a bare "key:" reloads as null
+                if (nested.Count == 0)
+                {
+                    lines.Add(padding + key + ": {}");
+                    continue;
+                }
                 lines.Add(padding + key + ":");
                 EmitBlockMapping(nested, indent + 2, lines);
             }
             else if (value is System.Collections.IEnumerable sequence and not string)
             {
+                var elements = sequence.Cast<object?>().ToList();
+                // an empty block sequence has no representation; a bare "key:" reloads as null
+                if (elements.Count == 0)
+                {
+                    lines.Add(padding + key + ": []");
+                    continue;
+                }
                 lines.Add(padding + key + ":");
-                foreach (object? element in sequence)
+                foreach (object? element in elements)
                 {
                     // SnakeYAML's block style puts the dash at the key's indentation
                     if (TryAsNestedMap(element, out Dictionary<string, object?>? elementMap))

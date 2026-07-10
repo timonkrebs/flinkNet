@@ -147,6 +147,30 @@ public class YamlParserUtilsTest : IDisposable
         Assert.Equal("['*', '123', 'true']", YamlParserUtils.ToYamlString(o3));
     }
 
+    /// <summary>Empty collections have no block representation — a bare "key:" reloads as
+    /// null — so the block dumper must emit the flow forms <c>[]</c> and <c>{}</c>.</summary>
+    [Fact]
+    public void TestDumpYamlEmitsEmptyCollectionsExplicitly()
+    {
+        var flat = new Dictionary<string, object>
+        {
+            { "a.list", new List<string>() },
+            { "a.map", new Dictionary<string, string>() },
+            { "a.scalar", "v" },
+        };
+
+        IList<string> lines = YamlParserUtils.ConvertAndDumpYamlFromFlatMap(flat);
+        Assert.Contains("  list: []", lines);
+        Assert.Contains("  map: {}", lines);
+
+        var reloaded = YamlParserUtils.ConvertToObject<Dictionary<object, object?>>(
+            string.Join("\n", lines));
+        Assert.NotNull(reloaded);
+        var nested = Assert.IsAssignableFrom<System.Collections.IDictionary>(reloaded["a"]);
+        Assert.Empty(Assert.IsAssignableFrom<System.Collections.IEnumerable>(nested["list"]));
+        Assert.Empty(Assert.IsAssignableFrom<System.Collections.IDictionary>(nested["map"]));
+    }
+
     /// <summary>Flow indicators terminate plain scalars inside flow collections, so list and
     /// map elements containing them must be quoted to survive a round-trip.</summary>
     [Fact]
