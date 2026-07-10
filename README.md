@@ -1,3 +1,11 @@
+# FlinkNet — Apache Flink, ported to .NET
+
+> **This fork is an in-progress rewrite of Apache Flink from Java to .NET (C#).**
+> The port lives in the [`dotnet/`](dotnet/) directory and is built module by module,
+> bottom-up along the Maven dependency graph; the original Java sources below serve as
+> the porting reference until the port is complete. See
+> [`dotnet/PORTING.md`](dotnet/PORTING.md) for conventions, status, and the roadmap.
+
 # Apache Flink
 
 Apache Flink is an open source stream processing framework with powerful stream- and batch-processing capabilities.
