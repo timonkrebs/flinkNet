@@ -210,9 +210,15 @@ public static class ConfigurationUtils
     /// </summary>
     public static object ConvertToList(object rawValue, Type atomicClass)
     {
-        if (rawValue is System.Collections.IList && rawValue is not Array)
+        if (rawValue is System.Collections.IList list && rawValue is not Array)
         {
-            return rawValue;
+            // PORT NOTE: Java returns any raw List as-is behind an erased cast, which works
+            // because YAML-loaded elements already carry the atomic type; .NET generics are
+            // reified, so an untyped List<object?> must be rebuilt as List<atomicClass>
+            // before the option cast.
+            return typeof(List<>).MakeGenericType(atomicClass).IsInstanceOfType(rawValue)
+                ? rawValue
+                : BuildTypedList(list, atomicClass);
         }
 
         try

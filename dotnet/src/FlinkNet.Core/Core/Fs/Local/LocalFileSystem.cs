@@ -33,12 +33,23 @@ public class LocalFileSystem : FileSystem
     /// <summary>The shared instance of the local file system.</summary>
     public static LocalFileSystem SharedInstance { get; } = new();
 
-    /// <summary>Path pointing to the current working directory.</summary>
-    private readonly Path _workingDir = new(new Uri(Directory.GetCurrentDirectory()).AbsolutePath);
+    /// <summary>Path pointing to the current working directory, as a file URI like Java's
+    /// <c>new File(...).toURI()</c>.</summary>
+    private readonly Path _workingDir =
+        new("file:" + AbsoluteUriPath(Directory.GetCurrentDirectory()));
 
-    /// <summary>Path pointing to the current user home directory.</summary>
+    /// <summary>Path pointing to the current user home directory, as a file URI.</summary>
     private readonly Path _homeDir =
-        new(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).Replace('\\', '/'));
+        new("file:" + AbsoluteUriPath(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
+
+    /// <summary>Renders a local path the way Java's <c>File.toURI().getPath()</c> does:
+    /// forward slashes with a leading slash ("/C:/tmp/x" on Windows).</summary>
+    internal static string AbsoluteUriPath(string localPath)
+    {
+        string path = localPath.Replace('\\', '/');
+        return path.StartsWith('/') ? path : "/" + path;
+    }
 
     public override IBlockLocation[] GetFileBlockLocations(IFileStatus file, long start, long len) =>
         [new LocalBlockLocation(file.Len)];

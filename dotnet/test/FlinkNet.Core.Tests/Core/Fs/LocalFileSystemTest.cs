@@ -170,6 +170,24 @@ public class LocalFileSystemTest : IDisposable
         Assert.False(lfs.Mkdirs(file));
     }
 
+    /// <summary>The working and home directories are file URIs with absolute paths, like
+    /// Java's <c>new File(...).toURI()</c>.</summary>
+    [Fact]
+    public void TestWorkingAndHomeDirectoriesAreAbsoluteFileUris()
+    {
+        FileSystem lfs = FileSystem.GetLocalFileSystem();
+
+        Path workingDir = lfs.GetWorkingDirectory();
+        Assert.Equal("file", workingDir.ToUri().Scheme);
+        Assert.True(workingDir.IsAbsolute());
+        Assert.Equal(Directory.GetCurrentDirectory().Replace('\\', '/').TrimStart('/'),
+            workingDir.GetPath().TrimStart('/'));
+
+        Path homeDir = lfs.GetHomeDirectory();
+        Assert.Equal("file", homeDir.ToUri().Scheme);
+        Assert.True(homeDir.IsAbsolute());
+    }
+
     /// <summary>Java renames with REPLACE_EXISTING: committing a temp file over an existing
     /// destination must succeed.</summary>
     [Fact]

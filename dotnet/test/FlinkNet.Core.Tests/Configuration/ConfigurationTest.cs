@@ -163,6 +163,22 @@ public class ConfigurationTest
         Assert.NotEqual(first, second);
     }
 
+    /// <summary>A list loaded from a YAML file arrives as an untyped list; reading it
+    /// through a typed option must convert the elements. Java relies on erasure here, .NET
+    /// must rebuild the list (see the PORT NOTE on ConfigurationUtils.ConvertToList).</summary>
+    [Fact]
+    public void TestUntypedRawListIsConvertedToTypedList()
+    {
+        var raw = new List<object?> { 1, 2, 3 };
+        object converted = ConvertToList(raw, typeof(int));
+        Assert.IsType<List<int>>(converted);
+        Assert.Equal(new List<int> { 1, 2, 3 }, converted);
+
+        // an already-typed list passes through untouched
+        var typed = new List<string> { "a", "b" };
+        Assert.Same(typed, ConvertToList(typed, typeof(string)));
+    }
+
     /// <summary>GetValue must render structured values structurally, not as CLR type
     /// names (see the PORT NOTE on Configuration.GetValue).</summary>
     [Fact]
