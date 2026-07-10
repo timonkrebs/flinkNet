@@ -129,4 +129,7 @@ public sealed class ListSerializer<T> : TypeSerializer<IList<T>>
                 && _elementSerializer.Equals(((ListSerializer<T>)obj)._elementSerializer));
 
     public override int GetHashCode() => _elementSerializer.GetHashCode();
+
+    public override TypeSerializerSnapshot<IList<T>> SnapshotConfiguration() =>
+        new ListSerializerSnapshot<T>(this);
 }

@@ -48,4 +48,18 @@ public sealed class CharSerializer : TypeSerializerSingleton<char>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteChar(source.ReadChar());
+
+    public override TypeSerializerSnapshot<char> SnapshotConfiguration() =>
+        new CharSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class CharSerializerSnapshot : SimpleTypeSerializerSnapshot<char>
+    {
+        public CharSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

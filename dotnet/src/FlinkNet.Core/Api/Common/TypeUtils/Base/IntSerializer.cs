@@ -48,4 +48,18 @@ public sealed class IntSerializer : TypeSerializerSingleton<int>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteInt(source.ReadInt());
+
+    public override TypeSerializerSnapshot<int> SnapshotConfiguration() =>
+        new IntSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class IntSerializerSnapshot : SimpleTypeSerializerSnapshot<int>
+    {
+        public IntSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

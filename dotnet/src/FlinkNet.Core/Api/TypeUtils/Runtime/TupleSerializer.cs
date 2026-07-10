@@ -195,6 +195,9 @@ public sealed class TupleSerializer<T> : TypeSerializer<T>
     public override int GetHashCode() =>
         31 * typeof(T).GetHashCode()
             + _fieldSerializers.Aggregate(17, (hash, s) => 31 * hash + s.GetHashCode());
+
+    public override TypeSerializerSnapshot<T> SnapshotConfiguration() =>
+        new TupleSerializerSnapshot<T>(this);
 }
 
 /// <summary>
@@ -229,7 +232,18 @@ public static class ObjectSerializerAdapter
             $"The given object of type {fieldSerializer.GetType()} is not a TypeSerializer.");
     }
 
-    private sealed class Adapter<TField>(TypeSerializer<TField> inner) : TypeSerializer<object?>
+    /// <summary>Returns the typed serializer wrapped by the given adapter, or the serializer
+    /// itself if it is not an adapter. Snapshots operate on the unwrapped serializers.</summary>
+    public static TypeSerializer Unwrap(TypeSerializer serializer) =>
+        serializer is IWrappedSerializer wrapped ? wrapped.Inner : serializer;
+
+    private interface IWrappedSerializer
+    {
+        TypeSerializer Inner { get; }
+    }
+
+    private sealed class Adapter<TField>(TypeSerializer<TField> inner)
+        : TypeSerializer<object?>, IWrappedSerializer
     {
         private readonly TypeSerializer<TField> _inner = inner;
 
@@ -264,5 +278,14 @@ public static class ObjectSerializerAdapter
             obj is Adapter<TField> other && _inner.Equals(other._inner);
 
         public override int GetHashCode() => _inner.GetHashCode();
+
+        public TypeSerializer Inner => _inner;
+
+        // PORT NOTE: adapters have no Java counterpart and are unwrapped before snapshotting
+        // (see TupleSerializerSnapshot); snapshot the underlying typed serializer instead.
+        public override TypeSerializerSnapshot<object?> SnapshotConfiguration() =>
+            throw new NotSupportedException(
+                "Object-boxing serializer adapters cannot be snapshotted; snapshot the "
+                    + "underlying typed serializer instead.");
     }
 }

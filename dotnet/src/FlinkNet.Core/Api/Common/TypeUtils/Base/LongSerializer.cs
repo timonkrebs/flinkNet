@@ -48,4 +48,18 @@ public sealed class LongSerializer : TypeSerializerSingleton<long>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteLong(source.ReadLong());
+
+    public override TypeSerializerSnapshot<long> SnapshotConfiguration() =>
+        new LongSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class LongSerializerSnapshot : SimpleTypeSerializerSnapshot<long>
+    {
+        public LongSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

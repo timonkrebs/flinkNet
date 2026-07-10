@@ -48,4 +48,18 @@ public sealed class BooleanSerializer : TypeSerializerSingleton<bool>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteBoolean(source.ReadBoolean());
+
+    public override TypeSerializerSnapshot<bool> SnapshotConfiguration() =>
+        new BooleanSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class BooleanSerializerSnapshot : SimpleTypeSerializerSnapshot<bool>
+    {
+        public BooleanSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

@@ -55,4 +55,18 @@ public sealed class StringSerializer : TypeSerializerSingleton<string>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         StringValue.CopyString(source, target);
+
+    public override TypeSerializerSnapshot<string> SnapshotConfiguration() =>
+        new StringSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class StringSerializerSnapshot : SimpleTypeSerializerSnapshot<string>
+    {
+        public StringSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

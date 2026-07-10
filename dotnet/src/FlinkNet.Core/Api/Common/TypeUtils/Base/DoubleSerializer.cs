@@ -48,4 +48,18 @@ public sealed class DoubleSerializer : TypeSerializerSingleton<double>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteDouble(source.ReadDouble());
+
+    public override TypeSerializerSnapshot<double> SnapshotConfiguration() =>
+        new DoubleSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class DoubleSerializerSnapshot : SimpleTypeSerializerSnapshot<double>
+    {
+        public DoubleSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

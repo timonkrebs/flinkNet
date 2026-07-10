@@ -48,4 +48,18 @@ public sealed class FloatSerializer : TypeSerializerSingleton<float>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteFloat(source.ReadFloat());
+
+    public override TypeSerializerSnapshot<float> SnapshotConfiguration() =>
+        new FloatSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class FloatSerializerSnapshot : SimpleTypeSerializerSnapshot<float>
+    {
+        public FloatSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

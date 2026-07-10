@@ -22,22 +22,34 @@ using FlinkNet.Core.Memory;
 namespace FlinkNet.Api.Common.TypeUtils;
 
 /// <summary>
+/// Non-generic base of <see cref="TypeSerializer{T}"/>.
+///
+/// <para>PORT NOTE: stands in for Java's wildcard <c>TypeSerializer&lt;?&gt;</c>, which the
+/// snapshot machinery plumbs through arrays of heterogeneous serializers.</para>
+/// </summary>
+[PublicEvolving]
+public abstract class TypeSerializer
+{
+    private protected TypeSerializer()
+    {
+    }
+
+    /// <summary>Untyped variant of <see cref="TypeSerializer{T}.SnapshotConfiguration"/>
+    /// (see the class PORT NOTE).</summary>
+    public abstract TypeSerializerSnapshot UntypedSnapshotConfiguration();
+}
+
+/// <summary>
 /// This interface describes the methods that are required for a data type to be handled by the
 /// Flink runtime. Specifically, this interface contains the serialization and copying methods.
 ///
 /// <para>The methods in this class are not necessarily thread safe. To avoid unpredictable side
 /// effects, it is recommended to call <see cref="Duplicate"/> and use one serializer instance
 /// per thread.</para>
-///
-/// <para><b>Upgrading TypeSerializers to the new TypeSerializerSnapshot model</b></para>
-///
-/// <para>PORT NOTE: Java's <c>snapshotConfiguration()</c> and the schema-evolution snapshot
-/// subsystem (<c>TypeSerializerSnapshot</c> and friends) are deferred to the state/checkpointing
-/// increment.</para>
 /// </summary>
 /// <typeparam name="T">The data type that the serializer serializes.</typeparam>
 [PublicEvolving]
-public abstract class TypeSerializer<T>
+public abstract class TypeSerializer<T> : TypeSerializer
 {
     // --------------------------------------------------------------------------------------------
     // General information about the type and the serializer
@@ -135,4 +147,24 @@ public abstract class TypeSerializer<T>
     public abstract override bool Equals(object? obj);
 
     public abstract override int GetHashCode();
+
+    // --------------------------------------------------------------------------------------------
+    // Serializer configuration snapshot for checkpoints/savepoints
+    // --------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Snapshots the configuration of this TypeSerializer. This method is only relevant if the
+    /// serializer is used to state stored in checkpoints/savepoints.
+    ///
+    /// <para>The snapshot of the TypeSerializer is supposed to contain all information that
+    /// affects the serialization format of the serializer. The snapshot serves two purposes:
+    /// First, to reproduce the serializer when the checkpoint/savepoint is restored, and second,
+    /// to check whether the serialization format is compatible with the serializer used in the
+    /// restored program.</para>
+    /// </summary>
+    /// <returns>snapshot of the serializer's current configuration.</returns>
+    public abstract TypeSerializerSnapshot<T> SnapshotConfiguration();
+
+    public sealed override TypeSerializerSnapshot UntypedSnapshotConfiguration() =>
+        SnapshotConfiguration();
 }

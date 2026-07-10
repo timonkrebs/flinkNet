@@ -175,4 +175,7 @@ public sealed class MapSerializer<TKey, TValue> : TypeSerializer<IDictionary<TKe
                 && _valueSerializer.Equals(((MapSerializer<TKey, TValue>)obj)._valueSerializer));
 
     public override int GetHashCode() => _keySerializer.GetHashCode() * 31 + _valueSerializer.GetHashCode();
+
+    public override TypeSerializerSnapshot<IDictionary<TKey, TValue>> SnapshotConfiguration() =>
+        new MapSerializerSnapshot<TKey, TValue>(this);
 }

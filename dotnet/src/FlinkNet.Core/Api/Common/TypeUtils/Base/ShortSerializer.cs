@@ -48,4 +48,18 @@ public sealed class ShortSerializer : TypeSerializerSingleton<short>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteShort(source.ReadShort());
+
+    public override TypeSerializerSnapshot<short> SnapshotConfiguration() =>
+        new ShortSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class ShortSerializerSnapshot : SimpleTypeSerializerSnapshot<short>
+    {
+        public ShortSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

@@ -48,4 +48,18 @@ public sealed class ByteSerializer : TypeSerializerSingleton<byte>
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteByte(source.ReadByte());
+
+    public override TypeSerializerSnapshot<byte> SnapshotConfiguration() =>
+        new ByteSerializerSnapshot();
+
+    // ------------------------------------------------------------------------
+
+    /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
+    public sealed class ByteSerializerSnapshot : SimpleTypeSerializerSnapshot<byte>
+    {
+        public ByteSerializerSnapshot()
+            : base(() => Instance)
+        {
+        }
+    }
 }

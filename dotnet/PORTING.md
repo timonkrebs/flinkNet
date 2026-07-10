@@ -184,9 +184,9 @@ has a native C# equivalent:
    - ✅ typeutils foundation: `TypeSerializer<T>` abstract base,
      `TypeSerializerSingleton<T>`, the nine primitive serializers
      (bool/byte/short/char/int/long/float/double/string) and
-     `StringValue` varint string I/O. Deferred:
-     `TypeSerializerSnapshot` schema-evolution subsystem (state
-     increment), `GenericArraySerializer`, Value types.
+     `StringValue` varint string I/O. The `TypeSerializerSnapshot`
+     schema-evolution subsystem followed in its own slice (below).
+     Deferred: `GenericArraySerializer`, Value types.
    - ✅ composite serializers: `ListSerializer<T>`
      (`IList<T>`, size + elements) and `MapSerializer<TKey,TValue>`
      (`IDictionary<K,V>`, size + entries with per-value null flags),
@@ -214,15 +214,32 @@ has a native C# equivalent:
      DelegatingConfiguration now implement the binary `Read`/`Write`
      wire format (type tags 0–6, StringValue-encoded strings);
      UnmodifiableConfiguration blocks `Read` (documented deviation).
-     Deferred: `VersionedIOReadableWritable`/
-     `PostVersionedIOReadableWritable` (follow with state machinery),
-     `SimpleVersionedSerializerTypeSerializerProxy` (needs
-     TypeSerializer snapshot subsystem), split assigners (runtime).
+     `VersionedIOReadableWritable` added with the snapshot machinery.
+     Deferred: `PostVersionedIOReadableWritable`,
+     `SimpleVersionedSerializerTypeSerializerProxy`, split assigners
+     (runtime).
+   - ✅ serializer snapshots: `TypeSerializerSnapshot` (abstract class
+     pair — the non-generic base replaces Java's wildcard plumbing and
+     carries internal untyped bridges; `TypeSerializer` gained the
+     matching non-generic base and the abstract
+     `SnapshotConfiguration()`), `TypeSerializerSchemaCompatibility`,
+     `SimpleTypeSerializerSnapshot`, `NestedSerializersSnapshotDelegate`,
+     `CompositeTypeSerializerSnapshot` (legacy deprecated hooks not
+     ported; `OuterSchemaCompatibility` hoisted),
+     `CompositeTypeSerializerUtil`, `TypeSerializerUtils.Snapshot`, and
+     `TypeSerializerSnapshotSerializationUtil` (proxy on
+     `VersionedIOReadableWritable`). Snapshot classes for all nine
+     basic serializers, `ListSerializerSnapshot`,
+     `MapSerializerSnapshot`, and `TupleSerializerSnapshot` (nested
+     serializers are the unwrapped field serializers, not the
+     object-boxing adapters). Versioned snapshot streams carry CLR
+     assembly-qualified type names, so they are structurally but not
+     byte-portable across the Java/.NET runtimes (PORT NOTE).
    - ⬜ next slices: option catalogs (`CoreOptions`,
      `TaskManagerOptions`, ...) as their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
-     C# pattern for the erased/raw `ConfigOption` type), serializer
-     snapshots (`TypeSerializerSnapshot` machinery), `Value` types.
+     C# pattern for the erased/raw `ConfigOption` type),
+     `GenericArraySerializer` + its snapshot, `Value` types.
 3. 🟨 `flink-metrics-core` — ✅ metrics API core: IMetric/MetricType,
    ICounter (+Simple/ThreadSafe counters), IGauge, IHistogram +
    HistogramStatistics, IMeter + MeterView, IView, ICharacterFilter,
