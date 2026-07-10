@@ -19,6 +19,7 @@
 using FlinkNet.Api.Tuples;
 using FlinkNet.Types;
 using Xunit;
+using Tuple = FlinkNet.Api.Tuples.Tuple;
 
 namespace FlinkNet.Tests.Api.Tuples;
 
@@ -42,5 +43,25 @@ public class Tuple2Test
         var tuple = new Tuple2<string, int?>("Test case", null);
         Assert.Equal("Test case", tuple.GetFieldNotNull<string>(0));
         Assert.Throws<NullFieldException>(() => tuple.GetFieldNotNull<int?>(1));
+    }
+
+    /// <summary>Like Java's raw <c>instanceof Tuple2</c> equality, tuples of the same arity
+    /// class compare structurally across generic instantiations.</summary>
+    [Fact]
+    public void TestEqualityAcrossGenericInstantiations()
+    {
+        var typed = Tuple2.Of(1, "a");
+
+        Tuple erased = Tuple.NewInstance(2);
+        erased.SetField(1, 0);
+        erased.SetField("a", 1);
+
+        Assert.True(typed.Equals(erased));
+        Assert.True(erased.Equals(typed));
+        Assert.Equal(typed.GetHashCode(), erased.GetHashCode());
+
+        Assert.False(typed.Equals(Tuple2.Of(2, "a")));
+        Assert.False(typed.Equals(Tuple2.Of(1, "b")));
+        Assert.False(typed.Equals(Tuple1.Of(1)));
     }
 }

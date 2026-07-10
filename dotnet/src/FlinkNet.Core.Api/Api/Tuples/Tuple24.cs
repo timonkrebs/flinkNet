@@ -377,7 +377,9 @@ public class Tuple24<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
     public override string ToString() =>
         "(" + ArrayAwareToString(F0) + "," + ArrayAwareToString(F1) + "," + ArrayAwareToString(F2) + "," + ArrayAwareToString(F3) + "," + ArrayAwareToString(F4) + "," + ArrayAwareToString(F5) + "," + ArrayAwareToString(F6) + "," + ArrayAwareToString(F7) + "," + ArrayAwareToString(F8) + "," + ArrayAwareToString(F9) + "," + ArrayAwareToString(F10) + "," + ArrayAwareToString(F11) + "," + ArrayAwareToString(F12) + "," + ArrayAwareToString(F13) + "," + ArrayAwareToString(F14) + "," + ArrayAwareToString(F15) + "," + ArrayAwareToString(F16) + "," + ArrayAwareToString(F17) + "," + ArrayAwareToString(F18) + "," + ArrayAwareToString(F19) + "," + ArrayAwareToString(F20) + "," + ArrayAwareToString(F21) + "," + ArrayAwareToString(F22) + "," + ArrayAwareToString(F23) + ")";
 
-    /// <summary>Deep equality for tuples by calling Equals() on the tuple members.</summary>
+    /// <summary>Deep equality for tuples by calling Equals() on the tuple members. Like Java's
+    /// raw <c>instanceof</c> check, tuples of the same arity class compare structurally across
+    /// generic instantiations.</summary>
     /// <param name="obj">the object checked for equality</param>
     /// <returns>true if this is equal to <paramref name="obj"/>.</returns>
     public override bool Equals(object? obj)
@@ -386,103 +388,104 @@ public class Tuple24<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
         {
             return true;
         }
-        if (obj is not Tuple24<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23> tuple)
+        if (!IsSameTupleClass(obj, typeof(Tuple24<,,,,,,,,,,,,,,,,,,,,,,,>)))
         {
             return false;
         }
-        if (!Equals(F0, tuple.F0))
+        var tuple = (Tuple)obj!;
+        if (!Equals(F0, tuple.GetField<object>(0)))
         {
             return false;
         }
-        if (!Equals(F1, tuple.F1))
+        if (!Equals(F1, tuple.GetField<object>(1)))
         {
             return false;
         }
-        if (!Equals(F2, tuple.F2))
+        if (!Equals(F2, tuple.GetField<object>(2)))
         {
             return false;
         }
-        if (!Equals(F3, tuple.F3))
+        if (!Equals(F3, tuple.GetField<object>(3)))
         {
             return false;
         }
-        if (!Equals(F4, tuple.F4))
+        if (!Equals(F4, tuple.GetField<object>(4)))
         {
             return false;
         }
-        if (!Equals(F5, tuple.F5))
+        if (!Equals(F5, tuple.GetField<object>(5)))
         {
             return false;
         }
-        if (!Equals(F6, tuple.F6))
+        if (!Equals(F6, tuple.GetField<object>(6)))
         {
             return false;
         }
-        if (!Equals(F7, tuple.F7))
+        if (!Equals(F7, tuple.GetField<object>(7)))
         {
             return false;
         }
-        if (!Equals(F8, tuple.F8))
+        if (!Equals(F8, tuple.GetField<object>(8)))
         {
             return false;
         }
-        if (!Equals(F9, tuple.F9))
+        if (!Equals(F9, tuple.GetField<object>(9)))
         {
             return false;
         }
-        if (!Equals(F10, tuple.F10))
+        if (!Equals(F10, tuple.GetField<object>(10)))
         {
             return false;
         }
-        if (!Equals(F11, tuple.F11))
+        if (!Equals(F11, tuple.GetField<object>(11)))
         {
             return false;
         }
-        if (!Equals(F12, tuple.F12))
+        if (!Equals(F12, tuple.GetField<object>(12)))
         {
             return false;
         }
-        if (!Equals(F13, tuple.F13))
+        if (!Equals(F13, tuple.GetField<object>(13)))
         {
             return false;
         }
-        if (!Equals(F14, tuple.F14))
+        if (!Equals(F14, tuple.GetField<object>(14)))
         {
             return false;
         }
-        if (!Equals(F15, tuple.F15))
+        if (!Equals(F15, tuple.GetField<object>(15)))
         {
             return false;
         }
-        if (!Equals(F16, tuple.F16))
+        if (!Equals(F16, tuple.GetField<object>(16)))
         {
             return false;
         }
-        if (!Equals(F17, tuple.F17))
+        if (!Equals(F17, tuple.GetField<object>(17)))
         {
             return false;
         }
-        if (!Equals(F18, tuple.F18))
+        if (!Equals(F18, tuple.GetField<object>(18)))
         {
             return false;
         }
-        if (!Equals(F19, tuple.F19))
+        if (!Equals(F19, tuple.GetField<object>(19)))
         {
             return false;
         }
-        if (!Equals(F20, tuple.F20))
+        if (!Equals(F20, tuple.GetField<object>(20)))
         {
             return false;
         }
-        if (!Equals(F21, tuple.F21))
+        if (!Equals(F21, tuple.GetField<object>(21)))
         {
             return false;
         }
-        if (!Equals(F22, tuple.F22))
+        if (!Equals(F22, tuple.GetField<object>(22)))
         {
             return false;
         }
-        if (!Equals(F23, tuple.F23))
+        if (!Equals(F23, tuple.GetField<object>(23)))
         {
             return false;
         }

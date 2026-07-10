@@ -191,4 +191,21 @@ public abstract class Tuple
 
         return o.ToString() ?? "null";
     }
+
+    /// <summary>
+    /// Whether the object is an instantiation (or a subclass of an instantiation) of the given
+    /// open generic tuple class. PORT NOTE: replicates Java's raw <c>instanceof TupleN</c>
+    /// checks, which compare tuples structurally across generic instantiations.
+    /// </summary>
+    private protected static bool IsSameTupleClass(object? obj, Type openTupleType)
+    {
+        for (Type? type = obj?.GetType(); type != null; type = type.BaseType)
+        {
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == openTupleType)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

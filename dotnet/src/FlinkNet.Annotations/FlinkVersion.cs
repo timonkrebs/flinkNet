@@ -70,9 +70,12 @@ public static class FlinkVersions
     public static bool IsNewerVersionThan(this FlinkVersion version, FlinkVersion otherVersion) =>
         version > otherVersion;
 
-    /// <summary>Returns all versions within the defined range, inclusive both start and end.</summary>
+    /// <summary>Returns all versions within the defined range, inclusive both start and end.
+    /// Iterates in chronological version order, like Java's <c>LinkedHashSet</c>-backed
+    /// <c>rangeOf</c>.</summary>
     public static IReadOnlySet<FlinkVersion> RangeOf(FlinkVersion start, FlinkVersion end) =>
-        Enum.GetValues<FlinkVersion>().Where(v => v >= start && v <= end).ToHashSet();
+        new SortedSet<FlinkVersion>(
+            Enum.GetValues<FlinkVersion>().Where(v => v >= start && v <= end));
 
     public static FlinkVersion? ByCode(string code) =>
         CodeMap.TryGetValue(code, out var version) ? version : null;

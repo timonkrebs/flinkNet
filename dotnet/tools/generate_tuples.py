@@ -201,6 +201,23 @@ public abstract class Tuple
 
         return o.ToString() ?? "null";
     }}
+
+    /// <summary>
+    /// Whether the object is an instantiation (or a subclass of an instantiation) of the given
+    /// open generic tuple class. PORT NOTE: replicates Java's raw <c>instanceof TupleN</c>
+    /// checks, which compare tuples structurally across generic instantiations.
+    /// </summary>
+    private protected static bool IsSameTupleClass(object? obj, Type openTupleType)
+    {{
+        for (Type? type = obj?.GetType(); type != null; type = type.BaseType)
+        {{
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == openTupleType)
+            {{
+                return true;
+            }}
+        }}
+        return false;
+    }}
 }}
 """
     write(os.path.join(TUPLE_DIR, "Tuple.cs"), content)
@@ -259,6 +276,7 @@ public class Tuple0 : Tuple
 
 def gen_tuple(arity):
     tps = type_params(arity)
+    open_generic_commas = "," * (arity - 1)
     fields_doc = "\n".join(
         f"/// <typeparam name=\"T{i}\">The type of field {i}</typeparam>" for i in range(arity)
     )
@@ -287,7 +305,7 @@ def gen_tuple(arity):
     to_string_parts = ' + "," + '.join(f"ArrayAwareToString(F{i})" for i in range(arity))
 
     equals_checks = "\n".join(
-        f"""        if (!Equals(F{i}, tuple.F{i}))
+        f"""        if (!Equals(F{i}, tuple.GetField<object>({i})))
         {{
             return false;
         }}"""
@@ -388,7 +406,9 @@ public class Tuple{arity}<{tps}> : Tuple
     public override string ToString() =>
         "(" + {to_string_parts} + ")";
 
-    /// <summary>Deep equality for tuples by calling Equals() on the tuple members.</summary>
+    /// <summary>Deep equality for tuples by calling Equals() on the tuple members. Like Java's
+    /// raw <c>instanceof</c> check, tuples of the same arity class compare structurally across
+    /// generic instantiations.</summary>
     /// <param name="obj">the object checked for equality</param>
     /// <returns>true if this is equal to <paramref name="obj"/>.</returns>
     public override bool Equals(object? obj)
@@ -397,10 +417,11 @@ public class Tuple{arity}<{tps}> : Tuple
         {{
             return true;
         }}
-        if (obj is not Tuple{arity}<{tps}> tuple)
+        if (!IsSameTupleClass(obj, typeof(Tuple{arity}<{open_generic_commas}>)))
         {{
             return false;
         }}
+        var tuple = (Tuple)obj!;
 {equals_checks}
         return true;
     }}

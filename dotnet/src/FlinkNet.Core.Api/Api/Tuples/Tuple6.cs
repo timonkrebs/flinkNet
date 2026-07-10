@@ -161,7 +161,9 @@ public class Tuple6<T0, T1, T2, T3, T4, T5> : Tuple
     public override string ToString() =>
         "(" + ArrayAwareToString(F0) + "," + ArrayAwareToString(F1) + "," + ArrayAwareToString(F2) + "," + ArrayAwareToString(F3) + "," + ArrayAwareToString(F4) + "," + ArrayAwareToString(F5) + ")";
 
-    /// <summary>Deep equality for tuples by calling Equals() on the tuple members.</summary>
+    /// <summary>Deep equality for tuples by calling Equals() on the tuple members. Like Java's
+    /// raw <c>instanceof</c> check, tuples of the same arity class compare structurally across
+    /// generic instantiations.</summary>
     /// <param name="obj">the object checked for equality</param>
     /// <returns>true if this is equal to <paramref name="obj"/>.</returns>
     public override bool Equals(object? obj)
@@ -170,31 +172,32 @@ public class Tuple6<T0, T1, T2, T3, T4, T5> : Tuple
         {
             return true;
         }
-        if (obj is not Tuple6<T0, T1, T2, T3, T4, T5> tuple)
+        if (!IsSameTupleClass(obj, typeof(Tuple6<,,,,,>)))
         {
             return false;
         }
-        if (!Equals(F0, tuple.F0))
+        var tuple = (Tuple)obj!;
+        if (!Equals(F0, tuple.GetField<object>(0)))
         {
             return false;
         }
-        if (!Equals(F1, tuple.F1))
+        if (!Equals(F1, tuple.GetField<object>(1)))
         {
             return false;
         }
-        if (!Equals(F2, tuple.F2))
+        if (!Equals(F2, tuple.GetField<object>(2)))
         {
             return false;
         }
-        if (!Equals(F3, tuple.F3))
+        if (!Equals(F3, tuple.GetField<object>(3)))
         {
             return false;
         }
-        if (!Equals(F4, tuple.F4))
+        if (!Equals(F4, tuple.GetField<object>(4)))
         {
             return false;
         }
-        if (!Equals(F5, tuple.F5))
+        if (!Equals(F5, tuple.GetField<object>(5)))
         {
             return false;
         }

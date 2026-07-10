@@ -125,7 +125,9 @@ public class Tuple3<T0, T1, T2> : Tuple
     public override string ToString() =>
         "(" + ArrayAwareToString(F0) + "," + ArrayAwareToString(F1) + "," + ArrayAwareToString(F2) + ")";
 
-    /// <summary>Deep equality for tuples by calling Equals() on the tuple members.</summary>
+    /// <summary>Deep equality for tuples by calling Equals() on the tuple members. Like Java's
+    /// raw <c>instanceof</c> check, tuples of the same arity class compare structurally across
+    /// generic instantiations.</summary>
     /// <param name="obj">the object checked for equality</param>
     /// <returns>true if this is equal to <paramref name="obj"/>.</returns>
     public override bool Equals(object? obj)
@@ -134,19 +136,20 @@ public class Tuple3<T0, T1, T2> : Tuple
         {
             return true;
         }
-        if (obj is not Tuple3<T0, T1, T2> tuple)
+        if (!IsSameTupleClass(obj, typeof(Tuple3<,,>)))
         {
             return false;
         }
-        if (!Equals(F0, tuple.F0))
+        var tuple = (Tuple)obj!;
+        if (!Equals(F0, tuple.GetField<object>(0)))
         {
             return false;
         }
-        if (!Equals(F1, tuple.F1))
+        if (!Equals(F1, tuple.GetField<object>(1)))
         {
             return false;
         }
-        if (!Equals(F2, tuple.F2))
+        if (!Equals(F2, tuple.GetField<object>(2)))
         {
             return false;
         }
