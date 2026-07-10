@@ -235,11 +235,21 @@ has a native C# equivalent:
      object-boxing adapters). Versioned snapshot streams carry CLR
      assembly-qualified type names, so they are structurally but not
      byte-portable across the Java/.NET runtimes (PORT NOTE).
+   - ✅ `GenericArraySerializer` + `GenericArraySerializerSnapshot`
+     (component class persisted in the outer snapshot for format
+     parity; the ctor drops Java's erasure-artifact `Class` param).
+   - 🟨 Value types: the `IValue`/`ICopyableValue`/`IResettableValue`/
+     `INormalizableKey` interfaces and the primitive values
+     `IntValue`, `LongValue`, `BooleanValue`, `NullValue` (incl.
+     normalized-key writing on MemorySegment). Deferred: the full
+     mutable `StringValue` class (the static varint string I/O is
+     ported), Byte/Char/Short/Float/Double values, `ListValue`/
+     `MapValue`, `Record`, the value serializers and comparators.
    - ⬜ next slices: option catalogs (`CoreOptions`,
      `TaskManagerOptions`, ...) as their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a
-     C# pattern for the erased/raw `ConfigOption` type),
-     `GenericArraySerializer` + its snapshot, `Value` types.
+     C# pattern for the erased/raw `ConfigOption` type), remaining
+     Value types.
 3. 🟨 `flink-metrics-core` — ✅ metrics API core: IMetric/MetricType,
    ICounter (+Simple/ThreadSafe counters), IGauge, IHistogram +
    HistogramStatistics, IMeter + MeterView, IView, ICharacterFilter,
