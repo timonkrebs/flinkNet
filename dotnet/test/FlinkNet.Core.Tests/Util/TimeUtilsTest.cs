@@ -137,6 +137,29 @@ public class TimeUtilsTest
         Assert.Equal(TimeSpan.FromMinutes(3064), TimeUtils.ParseDuration("P2DT3H4M"));
     }
 
+    /// <summary>The ISO fallback follows java.time.Duration.parse exactly (outcomes verified on a
+    /// JDK): no calendar units, case-insensitive, ',' fractions, per-component signs.</summary>
+    [Fact]
+    public void TestParseDurationIso8601FollowsJavaDurationGrammar()
+    {
+        // calendar-based units are not part of Duration's grammar
+        Assert.Throws<FormatException>(() => TimeUtils.ParseDuration("P1M"));
+        Assert.Throws<FormatException>(() => TimeUtils.ParseDuration("P1Y"));
+        Assert.Throws<FormatException>(() => TimeUtils.ParseDuration("P1W"));
+
+        // at least one component, and no bare time designator
+        Assert.Throws<FormatException>(() => TimeUtils.ParseDuration("P"));
+        Assert.Throws<FormatException>(() => TimeUtils.ParseDuration("PT"));
+
+        Assert.Equal(TimeSpan.FromSeconds(1), TimeUtils.ParseDuration("pt1s"));
+        Assert.Equal(TimeSpan.FromMilliseconds(1500), TimeUtils.ParseDuration("PT1,5S"));
+        Assert.Equal(TimeSpan.FromHours(1), TimeUtils.ParseDuration("P-1DT25H"));
+
+        // sub-tick precision truncates (see the class PORT NOTE); negatives are rejected
+        Assert.Equal(TimeSpan.Zero, TimeUtils.ParseDuration("PT0.000000001S"));
+        Assert.Throws<FormatException>(() => TimeUtils.ParseDuration("PT-1.5S"));
+    }
+
     [Fact]
     public void TestParseDurationInvalid()
     {

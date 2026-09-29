@@ -18,6 +18,7 @@
 
 using System.Globalization;
 using System.Numerics;
+using System.Text.RegularExpressions;
 
 namespace FlinkNet.Util;
 
@@ -34,6 +35,17 @@ public static class TimeUtils
     private static readonly IReadOnlyDictionary<string, TimeUnit> LabelToUnitMap = InitMap();
 
     private static readonly BigInteger NanosPerTick = new(100);
+
+    /// <summary>
+    /// The grammar of Java's <c>java.time.Duration.parse</c>: optional sign, days, and a time
+    /// section with hours, minutes and seconds (up to nine fraction digits, '.' or ','), each
+    /// component optionally signed, case-insensitive. Unlike XML Schema durations it has no
+    /// years, months or weeks.
+    /// </summary>
+    private static readonly Regex IsoDurationPattern = new(
+        @"^([-+]?)P(?:([-+]?[0-9]+)D)?"
+            + @"(T(?:([-+]?[0-9]+)H)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)(?:[.,]([0-9]{0,9}))?S)?)?\z",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     /// <summary>
     /// Parse the given string to a <see cref="TimeSpan"/>. The string is in format "{length
@@ -77,23 +89,24 @@ public static class TimeUtils
         if (number.Length == 0)
         {
             // Fall back to parse ISO-8601 duration format
-            TimeSpan parsedDuration;
-            try
-            {
-                parsedDuration = System.Xml.XmlConvert.ToTimeSpan(trimmed);
-            }
-            catch (FormatException)
+            if (!TryParseIsoDuration(trimmed, out BigInteger isoNanos))
             {
                 throw new FormatException(
                     "text does not start with a number, and is not a valid ISO-8601 duration format: "
                         + trimmed);
             }
-            if (parsedDuration < TimeSpan.Zero)
+            if (isoNanos < 0)
             {
                 // Don't support negative duration which is consistent with before format
                 throw new FormatException("negative duration is not supported");
             }
-            return parsedDuration;
+            BigInteger isoTicks = isoNanos / NanosPerTick;
+            if (isoTicks > long.MaxValue)
+            {
+                throw new ArgumentException(
+                    "The value '" + trimmed + "' cannot be represented as Duration (numeric overflow).");
+            }
+            return TimeSpan.FromTicks((long)isoTicks);
         }
 
         BigInteger value = BigInteger.Parse(number, CultureInfo.InvariantCulture);
@@ -125,6 +138,79 @@ public static class TimeUtils
 
         return TimeSpan.FromTicks((long)ticks);
     }
+
+    /// <summary>
+    /// Parses text in the grammar of Java's <c>java.time.Duration.parse</c> into signed
+    /// nanoseconds, following its component parsing, fraction handling and exact (overflow
+    /// checked) arithmetic. Returns false where <c>Duration.parse</c> throws.
+    /// </summary>
+    private static bool TryParseIsoDuration(string text, out BigInteger totalNanos)
+    {
+        totalNanos = BigInteger.Zero;
+
+        Match match = IsoDurationPattern.Match(text);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        // a letter T without any time section is invalid
+        Group timeSection = match.Groups[3];
+        if (timeSection.Success && timeSection.Length == 1)
+        {
+            return false;
+        }
+
+        Group days = match.Groups[2];
+        Group hours = match.Groups[4];
+        Group minutes = match.Groups[5];
+        Group seconds = match.Groups[6];
+        Group fraction = match.Groups[7];
+        if (!days.Success && !hours.Success && !minutes.Success && !seconds.Success)
+        {
+            return false;
+        }
+
+        try
+        {
+            long totalSeconds = checked(
+                ParseDurationComponent(days, 86_400)
+                    + (ParseDurationComponent(hours, 3_600)
+                        + (ParseDurationComponent(minutes, 60) + ParseDurationComponent(seconds, 1))));
+
+            long nanos = 0;
+            if (fraction.Success && fraction.Length > 0)
+            {
+                nanos = long.Parse(fraction.Value, NumberStyles.None, CultureInfo.InvariantCulture);
+                for (int i = fraction.Length; i < 9; i++)
+                {
+                    nanos *= 10;
+                }
+                if (seconds.Value[0] == '-')
+                {
+                    nanos = -nanos;
+                }
+            }
+
+            totalNanos = new BigInteger(totalSeconds) * 1_000_000_000 + nanos;
+            if (match.Groups[1].Value == "-")
+            {
+                totalNanos = -totalNanos;
+            }
+            return true;
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+    }
+
+    private static long ParseDurationComponent(Group group, long secondsPerUnit) =>
+        group.Success
+            ? checked(
+                long.Parse(group.Value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture)
+                    * secondsPerUnit)
+            : 0;
 
     /// <param name="duration">to convert to string</param>
     /// <returns>duration string in millis</returns>
