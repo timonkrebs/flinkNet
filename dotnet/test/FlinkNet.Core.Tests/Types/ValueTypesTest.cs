@@ -65,6 +65,11 @@ public class ValueTypesTest
         Assert.Equal(value, WriteAndRead(value));
         Assert.Equal(8, value.BinaryLength);
         Assert.True(new LongValue(long.MinValue).CompareTo(new LongValue(long.MaxValue)) < 0);
+
+        // Java: 43 + (int) (value ^ value >>> 32)
+        Assert.Equal(43, new LongValue(0).GetHashCode());
+        const long v = 478236947162389746L;
+        Assert.Equal(unchecked(43 + (int)(v ^ (v >>> 32))), value.GetHashCode());
     }
 
     [Fact]

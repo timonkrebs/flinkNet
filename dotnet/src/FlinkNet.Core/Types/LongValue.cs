@@ -67,7 +67,7 @@ public class LongValue : INormalizableKey<LongValue>, IResettableValue<LongValue
         return _value < otherValue ? -1 : _value > otherValue ? 1 : 0;
     }
 
-    public override int GetHashCode() => (int)(_value ^ (_value >>> 32));
+    public override int GetHashCode() => 43 + (int)(_value ^ (_value >>> 32));
 
     public override bool Equals(object? obj) => obj is LongValue other && other._value == _value;
 
