@@ -180,15 +180,42 @@ public class LocalFileSystem : FileSystem
             }
         }
 
+        string srcFull = System.IO.Path.GetFullPath(srcPath);
+        string dstFull = System.IO.Path.GetFullPath(dstPath);
+        bool srcExists = File.Exists(srcPath) || Directory.Exists(srcPath);
+
         // Files.move onto the very same path is a successful no-op; without this check the
         // replace-existing handling below would delete the source before moving it
-        if (string.Equals(
-                System.IO.Path.GetFullPath(srcPath),
-                System.IO.Path.GetFullPath(dstPath),
-                StringComparison.Ordinal)
-            && (File.Exists(srcPath) || Directory.Exists(srcPath)))
+        if (srcExists && string.Equals(srcFull, dstFull, StringComparison.Ordinal))
         {
             return true;
+        }
+
+        // on case-insensitive file systems, a case-only rename names the same entry: rename it
+        // directly, since the replace-existing handling below would delete the source as the
+        // "existing destination"
+        if (srcExists && string.Equals(srcFull, dstFull, FileSystemPathComparison))
+        {
+            try
+            {
+                if (File.Exists(srcPath))
+                {
+                    File.Move(srcPath, dstPath);
+                }
+                else
+                {
+                    Directory.Move(srcPath, dstPath);
+                }
+                return true;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
         }
 
         // Java moves with REPLACE_EXISTING: an existing destination file or empty directory
@@ -230,6 +257,16 @@ public class LocalFileSystem : FileSystem
     }
 
     public override bool IsDistributedFS => false;
+
+    /// <summary>
+    /// How local paths compare: case-insensitively on the platforms whose default file systems
+    /// are case-insensitive (Windows and Apple platforms), as the .NET runtime itself assumes.
+    /// </summary>
+    internal static StringComparison FileSystemPathComparison { get; } =
+        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsIOS()
+            || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
 
     /// <summary>Converts the given Flink path to a local file system path.</summary>
     internal static string PathToFilePath(Path path)

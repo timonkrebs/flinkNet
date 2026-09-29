@@ -282,4 +282,26 @@ public class LocalFileSystemTest : IDisposable
         Assert.Equal(5, status.BlockSize);
         Assert.Equal(0, status.AccessTime);
     }
+
+    /// <summary>A case-only rename must rename the entry, never delete it: on case-insensitive
+    /// file systems (Windows, macOS) both names refer to the same directory or file.</summary>
+    [Fact]
+    public void TestCaseOnlyRenameKeepsTheEntry()
+    {
+        FileSystem lfs = FileSystem.GetLocalFileSystem();
+
+        Path dir = TempPath("CaseDir");
+        Assert.True(lfs.Mkdirs(dir));
+        Path renamedDir = TempPath("casedir");
+        Assert.True(lfs.Rename(dir, renamedDir));
+        Assert.Contains(
+            "casedir",
+            Directory.EnumerateDirectories(_tmpDir).Select(System.IO.Path.GetFileName));
+
+        Path file = TempPath("CaseFile");
+        File.WriteAllText(file.GetPath(), "content");
+        Path renamedFile = TempPath("casefile");
+        Assert.True(lfs.Rename(file, renamedFile));
+        Assert.Equal("content", File.ReadAllText(renamedFile.GetPath()));
+    }
 }
