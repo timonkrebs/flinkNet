@@ -185,8 +185,8 @@ has a native C# equivalent:
      `TypeSerializerSingleton<T>`, the nine primitive serializers
      (bool/byte/short/char/int/long/float/double/string) and
      `StringValue` varint string I/O. The `TypeSerializerSnapshot`
-     schema-evolution subsystem followed in its own slice (below).
-     Deferred: `GenericArraySerializer`, Value types.
+     schema-evolution subsystem, `GenericArraySerializer` and the first
+     Value types followed in their own slices (below).
    - ✅ composite serializers: `ListSerializer<T>`
      (`IList<T>`, size + elements) and `MapSerializer<TKey,TValue>`
      (`IDictionary<K,V>`, size + entries with per-value null flags),
@@ -225,19 +225,25 @@ has a native C# equivalent:
      `SnapshotConfiguration()`), `TypeSerializerSchemaCompatibility`,
      `SimpleTypeSerializerSnapshot`, `NestedSerializersSnapshotDelegate`,
      `CompositeTypeSerializerSnapshot` (legacy deprecated hooks not
-     ported; `OuterSchemaCompatibility` hoisted),
+     ported; `OuterSchemaCompatibility` hoisted; Java's raw
+     `instanceof` check kept via a non-generic marker interface),
      `CompositeTypeSerializerUtil`, `TypeSerializerUtils.Snapshot`, and
      `TypeSerializerSnapshotSerializationUtil` (proxy on
      `VersionedIOReadableWritable`). Snapshot classes for all nine
      basic serializers, `ListSerializerSnapshot`,
      `MapSerializerSnapshot`, and `TupleSerializerSnapshot` (nested
-     serializers are the unwrapped field serializers, not the
-     object-boxing adapters). Versioned snapshot streams carry CLR
-     assembly-qualified type names, so they are structurally but not
-     byte-portable across the Java/.NET runtimes (PORT NOTE).
+     serializers are the unwrapped field serializers; object-boxing
+     adapters also snapshot themselves, delegating to the inner
+     serializer, for composites that do not unwrap). Persisted class
+     names are portable CLR type names (`InstantiationUtil`: simple
+     assembly names, no version/culture/key token, recursive over
+     generic arguments), so snapshots survive assembly and runtime
+     upgrades and rollbacks; streams are structurally identical to
+     Java's but not byte-portable across the runtimes (PORT NOTE).
    - ✅ `GenericArraySerializer` + `GenericArraySerializerSnapshot`
      (component class persisted in the outer snapshot for format
-     parity; the ctor drops Java's erasure-artifact `Class` param).
+     parity and validated against `typeof(C)` on read; the ctor drops
+     Java's erasure-artifact `Class` param).
    - 🟨 Value types: the `IValue`/`ICopyableValue`/`IResettableValue`/
      `INormalizableKey` interfaces and the primitive values
      `IntValue`, `LongValue`, `BooleanValue`, `NullValue` (incl.

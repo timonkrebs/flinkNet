@@ -281,11 +281,39 @@ public static class ObjectSerializerAdapter
 
         public TypeSerializer Inner => _inner;
 
-        // PORT NOTE: adapters have no Java counterpart and are unwrapped before snapshotting
-        // (see TupleSerializerSnapshot); snapshot the underlying typed serializer instead.
+        // PORT NOTE: adapters have no Java counterpart. Composites that mirror a Java layout
+        // (TupleSerializerSnapshot) unwrap them to persist the typed field snapshots; any other
+        // composite gets this delegating snapshot instead of a failure.
         public override TypeSerializerSnapshot<object?> SnapshotConfiguration() =>
-            throw new NotSupportedException(
-                "Object-boxing serializer adapters cannot be snapshotted; snapshot the "
-                    + "underlying typed serializer instead.");
+            new AdapterSnapshot<TField>(this);
+
+        internal TypeSerializer<TField> TypedInner => _inner;
+    }
+
+    /// <summary>Snapshot of an object-boxing adapter: the inner serializer's snapshot as the
+    /// single nested snapshot; restores to an adapter around the restored inner serializer.</summary>
+    private sealed class AdapterSnapshot<TField> : CompositeTypeSerializerSnapshot<object?, Adapter<TField>>
+    {
+        private const int SnapshotVersion = 1;
+
+        /// <summary>Constructor for read instantiation.</summary>
+        public AdapterSnapshot()
+        {
+        }
+
+        /// <summary>Constructor to create the snapshot for writing.</summary>
+        public AdapterSnapshot(Adapter<TField> adapter)
+            : base(adapter)
+        {
+        }
+
+        protected override int CurrentOuterSnapshotVersion => SnapshotVersion;
+
+        protected override TypeSerializer[] GetNestedSerializers(Adapter<TField> outerSerializer) =>
+            [outerSerializer.TypedInner];
+
+        protected override Adapter<TField> CreateOuterSerializerWithNestedSerializers(
+            TypeSerializer[] nestedSerializers) =>
+            new((TypeSerializer<TField>)nestedSerializers[0]);
     }
 }

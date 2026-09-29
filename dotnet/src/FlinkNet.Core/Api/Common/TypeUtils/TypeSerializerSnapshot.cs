@@ -80,13 +80,14 @@ public abstract class TypeSerializerSnapshot
     /// <para>The snapshot written with this method can be read via
     /// <see cref="ReadVersionedSnapshot"/>.</para>
     ///
-    /// <para>PORT NOTE: Java writes the snapshot's Java class name; the port writes the CLR
-    /// assembly-qualified type name, so snapshot streams are not portable across the two
-    /// runtimes (they are structurally identical otherwise).</para>
+    /// <para>PORT NOTE: Java writes the snapshot's Java class name; the port writes the portable
+    /// CLR type name (see <see cref="Util.InstantiationUtil.GetPortableTypeName"/>), so snapshot
+    /// streams are structurally identical to Java's but not byte-portable across the two
+    /// runtimes.</para>
     /// </summary>
     public static void WriteVersionedSnapshot(IDataOutputView output, TypeSerializerSnapshot snapshot)
     {
-        output.WriteUTF(snapshot.GetType().AssemblyQualifiedName!);
+        Util.InstantiationUtil.WriteTypeName(output, snapshot.GetType());
         output.WriteInt(snapshot.CurrentVersion);
         snapshot.WriteSnapshot(output);
     }

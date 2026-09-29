@@ -17,17 +17,22 @@
  */
 
 using FlinkNet.Core.Memory;
+using FlinkNet.Util;
 
 namespace FlinkNet.Api.Common.TypeUtils.Base;
 
-/// <summary>Point-in-time configuration of a <see cref="GenericArraySerializer{C}"/>.</summary>
+/// <summary>
+/// Point-in-time configuration of a <see cref="GenericArraySerializer{C}"/>.
+///
+/// <para>PORT NOTE: Java stores the component class read from the outer snapshot and needs it
+/// to recreate the serializer. Here the closed snapshot type already pins the component type,
+/// so the persisted component class is kept for format parity and validated on read.</para>
+/// </summary>
 /// <typeparam name="C">The component type.</typeparam>
 public sealed class GenericArraySerializerSnapshot<C>
     : CompositeTypeSerializerSnapshot<C?[], GenericArraySerializer<C>>
 {
     private const int SnapshotVersion = 1;
-
-    private Type? _componentClass;
 
     /// <summary>Constructor to be used for read instantiation.</summary>
     public GenericArraySerializerSnapshot()
@@ -38,39 +43,31 @@ public sealed class GenericArraySerializerSnapshot<C>
     public GenericArraySerializerSnapshot(GenericArraySerializer<C> genericArraySerializer)
         : base(genericArraySerializer)
     {
-        _componentClass = genericArraySerializer.ComponentClass;
     }
 
     protected override int CurrentOuterSnapshotVersion => SnapshotVersion;
 
     protected override void WriteOuterSnapshot(IDataOutputView output) =>
-        output.WriteUTF(_componentClass!.AssemblyQualifiedName!);
+        InstantiationUtil.WriteTypeName(output, typeof(C));
 
     protected override void ReadOuterSnapshot(int readOuterSnapshotVersion, IDataInputView input)
     {
-        string componentClassName = input.ReadUTF();
-        try
-        {
-            _componentClass = Type.GetType(componentClassName, throwOnError: true)!;
-        }
-        catch (Exception e)
+        Type componentClass = InstantiationUtil.ResolveTypeByName(input);
+        if (componentClass != typeof(C))
         {
             throw new IOException(
-                "Could not find the array component class '" + componentClassName + "'.", e);
+                "The array component class in the snapshot (" + componentClass
+                    + ") does not match the snapshot's component type " + typeof(C) + ".");
         }
     }
 
+    // both snapshots are validated against typeof(C), so equal snapshot types imply equal
+    // component classes (Java compares the stored classes)
     protected override OuterSchemaCompatibility ResolveOuterSchemaCompatibility(
-        TypeSerializerSnapshot<C?[]> oldSerializerSnapshot)
-    {
-        if (oldSerializerSnapshot is not GenericArraySerializerSnapshot<C> oldSnapshot)
-        {
-            return OuterSchemaCompatibility.Incompatible;
-        }
-        return _componentClass == oldSnapshot._componentClass
+        TypeSerializerSnapshot<C?[]> oldSerializerSnapshot) =>
+        oldSerializerSnapshot is GenericArraySerializerSnapshot<C>
             ? OuterSchemaCompatibility.CompatibleAsIs
             : OuterSchemaCompatibility.Incompatible;
-    }
 
     protected override GenericArraySerializer<C> CreateOuterSerializerWithNestedSerializers(
         TypeSerializer[] nestedSerializers)

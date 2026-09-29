@@ -19,6 +19,7 @@
 using FlinkNet.Annotations;
 using FlinkNet.Api.Common.TypeUtils;
 using FlinkNet.Core.Memory;
+using FlinkNet.Util;
 using Tuple = FlinkNet.Api.Tuples.Tuple;
 
 namespace FlinkNet.Api.TypeUtils.Runtime;
@@ -59,25 +60,15 @@ public sealed class TupleSerializerSnapshot<T> : CompositeTypeSerializerSnapshot
         TupleSerializer<T>.ForFields(nestedSerializers.Cast<object>().ToArray());
 
     protected override void WriteOuterSnapshot(IDataOutputView output) =>
-        output.WriteUTF(typeof(T).AssemblyQualifiedName!);
+        InstantiationUtil.WriteTypeName(output, typeof(T));
 
     protected override void ReadOuterSnapshot(int readOuterSnapshotVersion, IDataInputView input)
     {
-        string tupleClassName = input.ReadUTF();
-        Type tupleClass;
-        try
-        {
-            tupleClass = Type.GetType(tupleClassName, throwOnError: true)!;
-        }
-        catch (Exception e)
-        {
-            throw new IOException(
-                "Could not find the tuple class '" + tupleClassName + "'.", e);
-        }
+        Type tupleClass = InstantiationUtil.ResolveTypeByName(input);
         if (tupleClass != typeof(T))
         {
             throw new IOException(
-                "The tuple class in the snapshot (" + tupleClassName
+                "The tuple class in the snapshot (" + tupleClass
                     + ") does not match the snapshot's tuple type " + typeof(T) + ".");
         }
     }

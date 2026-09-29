@@ -90,4 +90,21 @@ public class GenericArraySerializerTest
                 .ResolveSchemaCompatibility(typed)
                 .IsCompatibleAsIs());
     }
+
+    /// <summary>A persisted component class that does not match the snapshot's component type
+    /// is corrupt data and must be rejected on read, as for tuple snapshots.</summary>
+    [Fact]
+    public void TestSnapshotRejectsMismatchedComponentClass()
+    {
+        var output = new DataOutputSerializer(256);
+        output.WriteInt(911108); // composite snapshot magic number
+        output.WriteInt(1); // outer snapshot version
+        FlinkNet.Util.InstantiationUtil.WriteTypeName(output, typeof(int)); // wrong component
+        new NestedSerializersSnapshotDelegate(StringSerializer.Instance)
+            .WriteNestedSerializerSnapshots(output);
+
+        var snapshot = new GenericArraySerializerSnapshot<string>();
+        Assert.Throws<IOException>(
+            () => snapshot.ReadSnapshot(3, new DataInputDeserializer(output.GetCopyOfBuffer())));
+    }
 }

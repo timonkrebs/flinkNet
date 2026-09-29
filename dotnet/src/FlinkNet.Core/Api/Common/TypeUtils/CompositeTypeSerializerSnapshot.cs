@@ -36,6 +36,16 @@ public enum OuterSchemaCompatibility
 }
 
 /// <summary>
+/// Non-generic view of any <see cref="CompositeTypeSerializerSnapshot{T, TSerializer}"/>.
+/// PORT NOTE: stands in for Java's raw <c>instanceof CompositeTypeSerializerSnapshot</c>
+/// check, which accepts composite snapshots regardless of their serializer type parameter.
+/// </summary>
+internal interface ICompositeTypeSerializerSnapshot
+{
+    TypeSerializerSnapshot[] GetNestedSerializerSnapshots();
+}
+
+/// <summary>
 /// A <c>CompositeTypeSerializerSnapshot</c> is a convenient serializer snapshot class that can be
 /// used by simple serializers which 1) delegate their serialization to multiple nested
 /// serializers, and 2) may contain some extra static information that needs to be persisted as
@@ -57,16 +67,14 @@ public enum OuterSchemaCompatibility
 /// <para>PORT NOTE: Java's deprecated legacy hooks (<c>isOuterSnapshotCompatible</c> and the
 /// serializer-typed <c>resolveOuterSchemaCompatibility</c> overload) are not ported; the
 /// snapshot-based <see cref="ResolveOuterSchemaCompatibility"/> defaults to compatible-as-is,
-/// which matches the observable behavior of Java's default hook chain. Java's raw
-/// <c>instanceof CompositeTypeSerializerSnapshot</c> check maps to the closed generic here, so
-/// two different composite snapshot classes over the same data type resolve as incompatible
-/// directly instead of via the nested comparison.</para>
+/// which matches the observable behavior of Java's default hook chain.</para>
 /// </summary>
 /// <typeparam name="T">The data type that the originating serializer of this snapshot
 /// serializes.</typeparam>
 /// <typeparam name="TSerializer">The type of the originating serializer.</typeparam>
 [PublicEvolving]
-public abstract class CompositeTypeSerializerSnapshot<T, TSerializer> : TypeSerializerSnapshot<T>
+public abstract class CompositeTypeSerializerSnapshot<T, TSerializer>
+    : TypeSerializerSnapshot<T>, ICompositeTypeSerializerSnapshot
     where TSerializer : TypeSerializer<T>
 {
     /// <summary>Magic number for integrity checks during deserialization.</summary>
@@ -134,7 +142,7 @@ public abstract class CompositeTypeSerializerSnapshot<T, TSerializer> : TypeSeri
     public override TypeSerializerSchemaCompatibility<T> ResolveSchemaCompatibility(
         TypeSerializerSnapshot<T> oldSerializerSnapshot)
     {
-        if (oldSerializerSnapshot is not CompositeTypeSerializerSnapshot<T, TSerializer> oldComposite)
+        if (oldSerializerSnapshot is not ICompositeTypeSerializerSnapshot oldComposite)
         {
             return TypeSerializerSchemaCompatibility<T>.Incompatible();
         }

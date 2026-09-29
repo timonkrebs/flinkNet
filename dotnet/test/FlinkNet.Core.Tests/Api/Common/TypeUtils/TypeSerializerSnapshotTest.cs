@@ -218,6 +218,107 @@ public class TypeSerializerSnapshotTest
         Assert.True(incompatible.IsIncompatible());
     }
 
+    /// <summary>A composite over an object-boxing adapter snapshots via the adapter's own
+    /// delegating snapshot instead of failing.</summary>
+    [Fact]
+    public void TestSnapshotOfWrappedSerializerRoundTrips()
+    {
+        var serializer =
+            new ListSerializer<object?>(ObjectSerializerAdapter.Wrap(IntSerializer.Instance));
+
+        TypeSerializerSnapshot restored = WriteAndRead(serializer.SnapshotConfiguration());
+        var restoredSerializer = (ListSerializer<object?>)restored.RestoreSerializerUntyped();
+        Assert.Equal(serializer, restoredSerializer);
+
+        var output = new DataOutputSerializer(64);
+        serializer.Serialize([1, 2, 3], output);
+        IList<object?> deserialized =
+            restoredSerializer.Deserialize(new DataInputDeserializer(output.GetCopyOfBuffer()));
+        Assert.Equal(new object?[] { 1, 2, 3 }, deserialized);
+
+        Assert.True(
+            serializer
+                .SnapshotConfiguration()
+                .ResolveSchemaCompatibility((TypeSerializerSnapshot<IList<object?>>)restored)
+                .IsCompatibleAsIs());
+    }
+
+    /// <summary>Like Java's raw <c>instanceof CompositeTypeSerializerSnapshot</c> check, a
+    /// composite snapshot of a different serializer class over the same type is resolved via
+    /// the nested snapshots (and the outer check), not rejected outright.</summary>
+    [Fact]
+    public void TestCompositeCompatibilityAcrossCompositeSnapshotClasses()
+    {
+        TypeSerializerSnapshot<IList<int>> oldSnapshot = new OtherListSerializer().SnapshotConfiguration();
+
+        TypeSerializerSchemaCompatibility<IList<int>> compatibility =
+            new ListSerializer<int>(IntSerializer.Instance)
+                .SnapshotConfiguration()
+                .ResolveSchemaCompatibility(oldSnapshot);
+
+        Assert.True(compatibility.IsCompatibleAsIs());
+    }
+
+    /// <summary>A list serializer class distinct from <see cref="ListSerializer{T}"/>, with its
+    /// own composite snapshot class.</summary>
+    private sealed class OtherListSerializer : TypeSerializer<IList<int>>
+    {
+        private readonly ListSerializer<int> _delegate = new(IntSerializer.Instance);
+
+        public override bool IsImmutableType => false;
+
+        public override TypeSerializer<IList<int>> Duplicate() => this;
+
+        public override IList<int> CreateInstance() => _delegate.CreateInstance();
+
+        public override IList<int> Copy(IList<int> from) => _delegate.Copy(from);
+
+        public override IList<int> Copy(IList<int> from, IList<int> reuse) =>
+            _delegate.Copy(from, reuse);
+
+        public override int Length => -1;
+
+        public override void Serialize(IList<int> record, IDataOutputView target) =>
+            _delegate.Serialize(record, target);
+
+        public override IList<int> Deserialize(IDataInputView source) =>
+            _delegate.Deserialize(source);
+
+        public override IList<int> Deserialize(IList<int> reuse, IDataInputView source) =>
+            _delegate.Deserialize(reuse, source);
+
+        public override void Copy(IDataInputView source, IDataOutputView target) =>
+            _delegate.Copy(source, target);
+
+        public override bool Equals(object? obj) => obj is OtherListSerializer;
+
+        public override int GetHashCode() => 7;
+
+        public override TypeSerializerSnapshot<IList<int>> SnapshotConfiguration() =>
+            new OtherListSerializerSnapshot(this);
+    }
+
+    private sealed class OtherListSerializerSnapshot
+        : CompositeTypeSerializerSnapshot<IList<int>, OtherListSerializer>
+    {
+        public OtherListSerializerSnapshot()
+        {
+        }
+
+        public OtherListSerializerSnapshot(OtherListSerializer serializer)
+            : base(serializer)
+        {
+        }
+
+        protected override int CurrentOuterSnapshotVersion => 1;
+
+        protected override TypeSerializer[] GetNestedSerializers(OtherListSerializer outerSerializer) =>
+            [IntSerializer.Instance];
+
+        protected override OtherListSerializer CreateOuterSerializerWithNestedSerializers(
+            TypeSerializer[] nestedSerializers) => new();
+    }
+
     /// <summary>A second int serializer, distinct from <see cref="IntSerializer"/>, to pin
     /// incompatibility between different serializer classes over the same type.</summary>
     private sealed class AlternativeIntSerializer : TypeSerializerSingleton<int>

@@ -55,27 +55,16 @@ public static class TypeSerializerSnapshotSerializationUtil
     /// constructor.
     ///
     /// <para>PORT NOTE: replaces Java's <c>InstantiationUtil.resolveClassByName</c> +
-    /// <c>instantiate</c>; the stream carries a CLR assembly-qualified type name.</para>
+    /// <c>instantiate</c>; the stream carries a portable CLR type name.</para>
     /// </summary>
     public static TypeSerializerSnapshot ReadAndInstantiateSnapshotClass(IDataInputView input)
     {
-        string className = input.ReadUTF();
-
-        Type type;
-        try
-        {
-            type = Type.GetType(className, throwOnError: true)!;
-        }
-        catch (Exception e)
-        {
-            throw new IOException(
-                "Could not find class '" + className + "' in the current runtime.", e);
-        }
+        Type type = Util.InstantiationUtil.ResolveTypeByName(input);
 
         if (!typeof(TypeSerializerSnapshot).IsAssignableFrom(type))
         {
             throw new IOException(
-                "The class " + className + " is not a subclass of "
+                "The class " + type.FullName + " is not a subclass of "
                     + typeof(TypeSerializerSnapshot).FullName + ".");
         }
 
@@ -86,7 +75,7 @@ public static class TypeSerializerSnapshotSerializationUtil
         catch (Exception e)
         {
             throw new IOException(
-                "Could not instantiate the snapshot class '" + className
+                "Could not instantiate the snapshot class '" + type.FullName
                     + "'. Snapshot classes must have a public nullary constructor.", e);
         }
     }
