@@ -148,6 +148,14 @@ public class Tuple4<T0, T1, T2, T3> : Tuple
         {
             return true;
         }
+        // fast path for the common same-instantiation case (no reflection, no boxing)
+        if (obj is Tuple4<T0, T1, T2, T3> same)
+        {
+            return EqualityComparer<T0?>.Default.Equals(F0, same.F0)
+                && EqualityComparer<T1?>.Default.Equals(F1, same.F1)
+                && EqualityComparer<T2?>.Default.Equals(F2, same.F2)
+                && EqualityComparer<T3?>.Default.Equals(F3, same.F3);
+        }
         if (!IsSameTupleClass(obj, typeof(Tuple4<,,,>)))
         {
             return false;

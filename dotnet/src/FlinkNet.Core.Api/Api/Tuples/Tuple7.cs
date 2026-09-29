@@ -184,6 +184,17 @@ public class Tuple7<T0, T1, T2, T3, T4, T5, T6> : Tuple
         {
             return true;
         }
+        // fast path for the common same-instantiation case (no reflection, no boxing)
+        if (obj is Tuple7<T0, T1, T2, T3, T4, T5, T6> same)
+        {
+            return EqualityComparer<T0?>.Default.Equals(F0, same.F0)
+                && EqualityComparer<T1?>.Default.Equals(F1, same.F1)
+                && EqualityComparer<T2?>.Default.Equals(F2, same.F2)
+                && EqualityComparer<T3?>.Default.Equals(F3, same.F3)
+                && EqualityComparer<T4?>.Default.Equals(F4, same.F4)
+                && EqualityComparer<T5?>.Default.Equals(F5, same.F5)
+                && EqualityComparer<T6?>.Default.Equals(F6, same.F6);
+        }
         if (!IsSameTupleClass(obj, typeof(Tuple7<,,,,,,>)))
         {
             return false;

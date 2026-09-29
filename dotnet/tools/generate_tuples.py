@@ -312,6 +312,10 @@ def gen_tuple(arity):
         for i in range(arity)
     )
 
+    typed_equals = "\n                && ".join(
+        f"EqualityComparer<T{i}?>.Default.Equals(F{i}, same.F{i})" for i in range(arity)
+    )
+
     hash_lines = ["        int result = F0?.GetHashCode() ?? 0;"] + [
         f"        result = 31 * result + (F{i}?.GetHashCode() ?? 0);" for i in range(1, arity)
     ]
@@ -416,6 +420,11 @@ public class Tuple{arity}<{tps}> : Tuple
         if (ReferenceEquals(this, obj))
         {{
             return true;
+        }}
+        // fast path for the common same-instantiation case (no reflection, no boxing)
+        if (obj is Tuple{arity}<{tps}> same)
+        {{
+            return {typed_equals};
         }}
         if (!IsSameTupleClass(obj, typeof(Tuple{arity}<{open_generic_commas}>)))
         {{

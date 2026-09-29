@@ -328,6 +328,29 @@ public class Tuple19<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
         {
             return true;
         }
+        // fast path for the common same-instantiation case (no reflection, no boxing)
+        if (obj is Tuple19<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> same)
+        {
+            return EqualityComparer<T0?>.Default.Equals(F0, same.F0)
+                && EqualityComparer<T1?>.Default.Equals(F1, same.F1)
+                && EqualityComparer<T2?>.Default.Equals(F2, same.F2)
+                && EqualityComparer<T3?>.Default.Equals(F3, same.F3)
+                && EqualityComparer<T4?>.Default.Equals(F4, same.F4)
+                && EqualityComparer<T5?>.Default.Equals(F5, same.F5)
+                && EqualityComparer<T6?>.Default.Equals(F6, same.F6)
+                && EqualityComparer<T7?>.Default.Equals(F7, same.F7)
+                && EqualityComparer<T8?>.Default.Equals(F8, same.F8)
+                && EqualityComparer<T9?>.Default.Equals(F9, same.F9)
+                && EqualityComparer<T10?>.Default.Equals(F10, same.F10)
+                && EqualityComparer<T11?>.Default.Equals(F11, same.F11)
+                && EqualityComparer<T12?>.Default.Equals(F12, same.F12)
+                && EqualityComparer<T13?>.Default.Equals(F13, same.F13)
+                && EqualityComparer<T14?>.Default.Equals(F14, same.F14)
+                && EqualityComparer<T15?>.Default.Equals(F15, same.F15)
+                && EqualityComparer<T16?>.Default.Equals(F16, same.F16)
+                && EqualityComparer<T17?>.Default.Equals(F17, same.F17)
+                && EqualityComparer<T18?>.Default.Equals(F18, same.F18);
+        }
         if (!IsSameTupleClass(obj, typeof(Tuple19<,,,,,,,,,,,,,,,,,,>)))
         {
             return false;

@@ -64,4 +64,17 @@ public class Tuple2Test
         Assert.False(typed.Equals(Tuple2.Of(1, "b")));
         Assert.False(typed.Equals(Tuple1.Of(1)));
     }
+
+    /// <summary>The same-instantiation fast path keeps Java's field semantics, incl. nulls.</summary>
+    [Fact]
+    public void TestEqualitySameInstantiation()
+    {
+        var withNull = new Tuple2<string, int?>(null, null);
+        Assert.True(withNull.Equals(new Tuple2<string, int?>(null, null)));
+        Assert.False(withNull.Equals(new Tuple2<string, int?>("a", null)));
+        Assert.False(withNull.Equals(new Tuple2<string, int?>(null, 0)));
+
+        Assert.True(Tuple2.Of(1.5, "x").Equals(Tuple2.Of(1.5, "x")));
+        Assert.False(Tuple2.Of(1.5, "x").Equals(null));
+    }
 }

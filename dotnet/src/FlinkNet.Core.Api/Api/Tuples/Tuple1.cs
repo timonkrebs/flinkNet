@@ -112,6 +112,11 @@ public class Tuple1<T0> : Tuple
         {
             return true;
         }
+        // fast path for the common same-instantiation case (no reflection, no boxing)
+        if (obj is Tuple1<T0> same)
+        {
+            return EqualityComparer<T0?>.Default.Equals(F0, same.F0);
+        }
         if (!IsSameTupleClass(obj, typeof(Tuple1<>)))
         {
             return false;
