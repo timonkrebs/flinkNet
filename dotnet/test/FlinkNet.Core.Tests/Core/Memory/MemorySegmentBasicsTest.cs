@@ -254,4 +254,37 @@ public class MemorySegmentBasicsTest
             segment.Free();
         }
     }
+
+    /// <summary>Concurrent frees of an off-heap segment: exactly one wins the atomic transition
+    /// and releases the native memory; the others report the repeated free.</summary>
+    [Fact]
+    public void TestConcurrentFreeReleasesOnce()
+    {
+        const int threadCount = 4;
+        for (int round = 0; round < 200; round++)
+        {
+            MemorySegment segment = MemorySegmentFactory.AllocateUnpooledOffHeapMemory(64, owner: "test");
+            int successes = 0;
+            using var barrier = new Barrier(threadCount);
+            var threads = Enumerable.Range(0, threadCount)
+                .Select(_ => new Thread(() =>
+                {
+                    barrier.SignalAndWait();
+                    try
+                    {
+                        segment.Free();
+                        Interlocked.Increment(ref successes);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                }))
+                .ToList();
+            threads.ForEach(t => t.Start());
+            threads.ForEach(t => t.Join());
+
+            Assert.Equal(1, successes);
+            Assert.True(segment.IsFreed);
+        }
+    }
 }

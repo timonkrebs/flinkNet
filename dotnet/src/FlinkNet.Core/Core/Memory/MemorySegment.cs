@@ -55,8 +55,8 @@ public sealed unsafe class MemorySegment
     /// <summary>Optional owner of the memory segment.</summary>
     private readonly object? _owner;
 
-    /// <summary>Whether this segment has been freed.</summary>
-    private bool _freed;
+    /// <summary>Whether this segment has been freed (0 or 1; an int for atomic transitions).</summary>
+    private int _freed;
 
     /// <summary>Whether this segment owns native memory that must be released on free.</summary>
     private readonly bool _ownsNativeMemory;
@@ -89,21 +89,26 @@ public sealed unsafe class MemorySegment
     public int Size => _size;
 
     /// <summary>Checks whether the memory segment was freed.</summary>
-    public bool IsFreed => _freed;
+    public bool IsFreed => Volatile.Read(ref _freed) != 0;
 
     /// <summary>
     /// Frees this memory segment. After this operation has been called, no further operations are
     /// possible on the memory segment and will fail. The actual memory (heap or off-heap) will
     /// only be released after this memory segment object has become garbage collected (heap), or
     /// is released immediately (owned native memory).
+    ///
+    /// <para>PORT NOTE: like Java's <c>isFreedAtomic.getAndSet(true)</c>, only the caller that
+    /// wins the atomic transition releases the memory, so concurrent frees cannot release native
+    /// memory twice. Java reports a repeated free only when the test-only
+    /// <c>flink.tests.check-segment-multiple-free</c> property is set and otherwise ignores it;
+    /// the port always reports it.</para>
     /// </summary>
     public void Free()
     {
-        if (_freed)
+        if (Interlocked.Exchange(ref _freed, 1) != 0)
         {
             throw new InvalidOperationException("MemorySegment can be freed only once!");
         }
-        _freed = true;
         if (_ownsNativeMemory && _address != null)
         {
             NativeMemory.Free(_address);
@@ -167,7 +172,7 @@ public sealed unsafe class MemorySegment
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ref byte GetRef(int index, int length)
     {
-        if (_freed)
+        if (_freed != 0)
         {
             throw new InvalidOperationException("MemorySegment has been freed.");
         }
@@ -182,7 +187,7 @@ public sealed unsafe class MemorySegment
 
     private void CheckNotFreed()
     {
-        if (_freed)
+        if (_freed != 0)
         {
             throw new InvalidOperationException("MemorySegment has been freed.");
         }
