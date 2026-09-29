@@ -94,6 +94,38 @@ public class MetricsCoreTest
         Assert.False(config.GetBoolean("notBool", true));
     }
 
+    /// <summary>Native numbers convert like Java's Number.intValue()/longValue(): floating
+    /// values truncate toward zero and saturate (NaN to 0), longs narrow to int by wrapping.</summary>
+    [Fact]
+    public void TestMetricConfigNumericConversionsFollowJava()
+    {
+        var config = new MetricConfig
+        {
+            ["pos"] = 1.9,
+            ["neg"] = -1.9,
+            ["half"] = 3.5,
+            ["float"] = 2.7f,
+            ["big"] = 1e10,
+            ["huge"] = 1e30,
+            ["nan"] = double.NaN,
+            ["wide"] = 4294967297L,
+        };
+
+        Assert.Equal(1, config.GetInteger("pos", 0));
+        Assert.Equal(-1, config.GetInteger("neg", 0));
+        Assert.Equal(3, config.GetInteger("half", 0));
+        Assert.Equal(2, config.GetInteger("float", 0));
+        Assert.Equal(int.MaxValue, config.GetInteger("big", 0));
+        Assert.Equal(0, config.GetInteger("nan", 7));
+        Assert.Equal(1, config.GetInteger("wide", 0));
+
+        Assert.Equal(1L, config.GetLong("pos", 0L));
+        Assert.Equal(-1L, config.GetLong("neg", 0L));
+        Assert.Equal(10_000_000_000L, config.GetLong("big", 0L));
+        Assert.Equal(long.MaxValue, config.GetLong("huge", 0L));
+        Assert.Equal(0L, config.GetLong("nan", 7L));
+    }
+
     [Fact]
     public void TestUnregisteredMetricsGroup()
     {
@@ -152,6 +184,37 @@ public class MetricsCoreTest
         Assert.Empty(reporter.HistogramNames);
     }
 
+    /// <summary>Metric registration synchronizes on the lock that subclasses use while
+    /// enumerating, like Java's synchronized (this) on the reporter instance.</summary>
+    [Fact]
+    public async Task TestSubclassesShareTheMetricsLock()
+    {
+        var reporter = new TestReporter();
+        IMetricGroup group = new UnregisteredMetricsGroup();
+        using var locked = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+
+        var holder = new Thread(() =>
+        {
+            lock (reporter.Lock)
+            {
+                locked.Set();
+                release.Wait();
+            }
+        });
+        holder.Start();
+        locked.Wait();
+
+        Task add = Task.Run(() => reporter.NotifyOfAddedMetric(new SimpleCounter(), "c", group));
+        Task first = await Task.WhenAny(add, Task.Delay(TimeSpan.FromMilliseconds(200)));
+        Assert.NotSame(add, first);
+
+        release.Set();
+        await add.WaitAsync(TimeSpan.FromSeconds(10));
+        holder.Join();
+        Assert.Equal("c", Assert.Single(reporter.CounterNames));
+    }
+
     private sealed class ConstantGauge<T>(T value) : IGauge<T>
     {
         public T GetValue() => value;
@@ -166,6 +229,8 @@ public class MetricsCoreTest
         public IEnumerable<string> MeterNames => Meters.Values;
 
         public IEnumerable<string> HistogramNames => Histograms.Values;
+
+        public object Lock => SyncRoot;
 
         public override void Open(MetricConfig config)
         {

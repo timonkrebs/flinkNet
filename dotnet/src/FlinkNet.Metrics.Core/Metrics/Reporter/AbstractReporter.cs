@@ -34,7 +34,13 @@ public abstract class AbstractReporter : IMetricReporter, ICharacterFilter
     protected readonly Dictionary<IHistogram, string> Histograms = new();
     protected readonly Dictionary<IMeter, string> Meters = new();
 
-    private readonly object _lock = new();
+    /// <summary>
+    /// Guards the metric dictionaries. Subclasses must hold it while enumerating them, since
+    /// metrics are added and removed concurrently with reporting. PORT NOTE: Java synchronizes on
+    /// the reporter instance so that subclasses can use <c>synchronized (this)</c>; the port
+    /// exposes that monitor as this object.
+    /// </summary>
+    protected readonly object SyncRoot = new();
 
     public abstract void Open(MetricConfig config);
 
@@ -45,7 +51,7 @@ public abstract class AbstractReporter : IMetricReporter, ICharacterFilter
     public void NotifyOfAddedMetric(IMetric metric, string metricName, IMetricGroup group)
     {
         string name = group.GetMetricIdentifier(metricName, this);
-        lock (_lock)
+        lock (SyncRoot)
         {
             switch (metric.GetMetricType())
             {
@@ -70,7 +76,7 @@ public abstract class AbstractReporter : IMetricReporter, ICharacterFilter
 
     public void NotifyOfRemovedMetric(IMetric metric, string metricName, IMetricGroup group)
     {
-        lock (_lock)
+        lock (SyncRoot)
         {
             switch (metric.GetMetricType())
             {

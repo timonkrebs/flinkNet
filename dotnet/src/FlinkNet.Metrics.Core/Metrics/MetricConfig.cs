@@ -51,8 +51,7 @@ public class MetricConfig : Dictionary<string, object>
         return value switch
         {
             int i => i,
-            IConvertible c and (long or short or byte or float or double or decimal) =>
-                c.ToInt32(CultureInfo.InvariantCulture),
+            long or short or byte or float or double or decimal => ToJavaInt(value),
             _ => int.Parse(value.ToString()!, CultureInfo.InvariantCulture),
         };
     }
@@ -66,11 +65,50 @@ public class MetricConfig : Dictionary<string, object>
         return value switch
         {
             long l => l,
-            IConvertible c and (int or short or byte or float or double or decimal) =>
-                c.ToInt64(CultureInfo.InvariantCulture),
+            int or short or byte or float or double or decimal => ToJavaLong(value),
             _ => long.Parse(value.ToString()!, CultureInfo.InvariantCulture),
         };
     }
+
+    /// <summary>
+    /// Java's <c>Number.intValue()</c>: floating-point values truncate toward zero and saturate
+    /// to the int range (NaN to 0) instead of rounding like <see cref="IConvertible.ToInt32"/>;
+    /// integral values narrow by wrapping.
+    /// </summary>
+    private static int ToJavaInt(object value) => value switch
+    {
+        float f => DoubleToInt(f),
+        double d => DoubleToInt(d),
+        _ => unchecked((int)ToJavaLong(value)),
+    };
+
+    /// <summary>
+    /// Java's <c>Number.longValue()</c>: floating-point values truncate toward zero and saturate
+    /// to the long range (NaN to 0) instead of rounding like <see cref="IConvertible.ToInt64"/>.
+    /// </summary>
+    private static long ToJavaLong(object value) => value switch
+    {
+        long l => l,
+        int i => i,
+        short s => s,
+        byte b => b,
+        float f => DoubleToLong(f),
+        double d => DoubleToLong(d),
+        decimal m => (long)decimal.Truncate(m),
+        _ => throw new ArgumentException("Not a number: " + value),
+    };
+
+    private static int DoubleToInt(double d) =>
+        double.IsNaN(d) ? 0
+            : d >= int.MaxValue ? int.MaxValue
+            : d <= int.MinValue ? int.MinValue
+            : (int)d;
+
+    private static long DoubleToLong(double d) =>
+        double.IsNaN(d) ? 0
+            : d >= long.MaxValue ? long.MaxValue
+            : d <= long.MinValue ? long.MinValue
+            : (long)d;
 
     public float GetFloat(string key, float defaultValue)
     {
