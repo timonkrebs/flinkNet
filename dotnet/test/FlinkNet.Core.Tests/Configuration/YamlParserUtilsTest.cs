@@ -199,6 +199,30 @@ public class YamlParserUtilsTest : IDisposable
         Assert.Single(Assert.IsAssignableFrom<System.Collections.IDictionary>(items[1]));
     }
 
+    /// <summary>A key with a value that is also a prefix of another key cannot be nested; the
+    /// dump must fail in both insertion orders rather than silently drop one entry (see the
+    /// PORT NOTE: Java drops or throws depending on the order).</summary>
+    [Fact]
+    public void TestDumpYamlRejectsPrefixCollisions()
+    {
+        Assert.Throws<ArgumentException>(() => YamlParserUtils.ConvertAndDumpYamlFromFlatMap(
+            new Dictionary<string, object> { { "a", 1 }, { "a.b", 2 } }));
+        Assert.Throws<ArgumentException>(() => YamlParserUtils.ConvertAndDumpYamlFromFlatMap(
+            new Dictionary<string, object> { { "a.b", 2 }, { "a", 1 } }));
+
+        // a map-typed configuration value is data, not a node: neither merged into nor mutated
+        var mapValue = new Dictionary<string, object?> { { "x", 1 } };
+        Assert.Throws<ArgumentException>(() => YamlParserUtils.ConvertAndDumpYamlFromFlatMap(
+            new Dictionary<string, object> { { "a", mapValue }, { "a.b", 2 } }));
+        Assert.Equal(new[] { "x" }, mapValue.Keys);
+
+        // siblings under a shared prefix remain fine
+        Assert.Equal(
+            new[] { "a:", "  b: 1", "  c: 2" },
+            YamlParserUtils.ConvertAndDumpYamlFromFlatMap(
+                new Dictionary<string, object> { { "a.b", 1 }, { "a.c", 2 } }));
+    }
+
     /// <summary>Flow indicators terminate plain scalars inside flow collections, so list and
     /// map elements containing them must be quoted to survive a round-trip.</summary>
     [Fact]

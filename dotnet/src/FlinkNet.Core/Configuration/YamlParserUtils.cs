@@ -99,20 +99,40 @@ public static partial class YamlParserUtils
     public static IList<string> ConvertAndDumpYamlFromFlatMap(
         IDictionary<string, object> flattenMap)
     {
+        // PORT NOTE: a key that has a value and is also a prefix of another key (a=1, a.b=2)
+        // cannot be represented as nested YAML. Java throws a ClassCastException when the value
+        // comes first and silently drops the nested keys when it comes second; the port rejects
+        // the collision in both orders. Structural nodes are tracked by reference so that map
+        // values of the configuration are never mistaken for (and mutated as) nodes.
         var nestedMap = new Dictionary<string, object?>();
+        var nodes = new HashSet<object>(ReferenceEqualityComparer.Instance) { nestedMap };
         foreach (KeyValuePair<string, object> entry in flattenMap)
         {
             string[] keys = entry.Key.Split('.');
             Dictionary<string, object?> currentMap = nestedMap;
             for (int i = 0; i < keys.Length - 1; i++)
             {
-                if (!currentMap.TryGetValue(keys[i], out object? child)
-                    || child is not Dictionary<string, object?> childMap)
+                if (currentMap.TryGetValue(keys[i], out object? child))
                 {
-                    childMap = new Dictionary<string, object?>();
-                    currentMap[keys[i]] = childMap;
+                    if (child is not Dictionary<string, object?> childMap || !nodes.Contains(childMap))
+                    {
+                        throw PrefixCollision(string.Join('.', keys[..(i + 1)]), entry.Key);
+                    }
+                    currentMap = childMap;
                 }
-                currentMap = childMap;
+                else
+                {
+                    var created = new Dictionary<string, object?>();
+                    nodes.Add(created);
+                    currentMap[keys[i]] = created;
+                    currentMap = created;
+                }
+            }
+            if (currentMap.TryGetValue(keys[^1], out object? existing)
+                && existing is not null
+                && nodes.Contains(existing))
+            {
+                throw PrefixCollision(entry.Key, entry.Key + ".*");
             }
             currentMap[keys[^1]] = entry.Value;
         }
@@ -121,6 +141,11 @@ public static partial class YamlParserUtils
         EmitBlockMapping(nestedMap, 0, lines);
         return lines;
     }
+
+    private static ArgumentException PrefixCollision(string valueKey, string nestedKey) =>
+        new(
+            "The configuration key '" + valueKey + "' has a value and is also a prefix of '"
+                + nestedKey + "'; nested YAML cannot represent both without losing an entry.");
 
     /// <summary>Parses the given YAML string and casts the result to <typeparamref name="T"/>.</summary>
     public static T? ConvertToObject<T>(string value)
