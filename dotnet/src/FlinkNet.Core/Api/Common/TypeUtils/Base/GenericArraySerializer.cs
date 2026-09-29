@@ -25,12 +25,18 @@ namespace FlinkNet.Api.Common.TypeUtils.Base;
 /// A serializer for arrays of objects.
 ///
 /// <para>PORT NOTE: Java's constructor takes the component <c>Class</c> explicitly (an erasure
-/// artifact used for reflective array creation); reified generics make it <c>typeof(C)</c>.</para>
+/// artifact used for reflective array creation); reified generics make it <c>typeof(C)</c>.
+/// Java's object arrays can hold null elements; a non-nullable value-type component (e.g.
+/// <c>int</c> where Java has <c>Integer[]</c>) cannot, so reading a null element fails instead
+/// of fabricating <c>default(C)</c>. Use a nullable component (<c>int?</c>) for such data.</para>
 /// </summary>
 /// <typeparam name="C">The component type.</typeparam>
 [Internal]
 public sealed class GenericArraySerializer<C> : TypeSerializer<C?[]>
 {
+    private static readonly bool ComponentCanBeNull =
+        !typeof(C).IsValueType || Nullable.GetUnderlyingType(typeof(C)) != null;
+
     private readonly TypeSerializer<C> _componentSerializer;
 
     private C?[]? _empty;
@@ -107,6 +113,13 @@ public sealed class GenericArraySerializer<C> : TypeSerializer<C?[]>
         for (int i = 0; i < len; i++)
         {
             bool isNonNull = source.ReadBoolean();
+            if (!isNonNull && !ComponentCanBeNull)
+            {
+                throw new IOException(
+                    "The serialized array contains a null element, which the non-nullable "
+                        + "component type " + typeof(C) + " cannot represent; use a nullable "
+                        + "component type instead.");
+            }
             array[i] = isNonNull ? _componentSerializer.Deserialize(source) : default;
         }
 

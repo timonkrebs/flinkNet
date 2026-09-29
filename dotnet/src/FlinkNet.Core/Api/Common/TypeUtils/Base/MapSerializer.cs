@@ -28,6 +28,10 @@ namespace FlinkNet.Api.Common.TypeUtils.Base;
 /// <para>The serialization format for the map is as follows: four bytes for the length of the
 /// map, followed by the serialized representation of each key-value pair. To allow null values,
 /// each value is prefixed by a null flag.</para>
+///
+/// <para>PORT NOTE: a non-nullable value type (e.g. <c>int</c> where Java has <c>Integer</c>)
+/// cannot hold a null value, so reading one fails instead of fabricating
+/// <c>default(TValue)</c>. Use a nullable value type (<c>int?</c>) for such data.</para>
 /// </summary>
 /// <typeparam name="TKey">The type of the keys in the map.</typeparam>
 /// <typeparam name="TValue">The type of the values in the map.</typeparam>
@@ -35,6 +39,9 @@ namespace FlinkNet.Api.Common.TypeUtils.Base;
 public sealed class MapSerializer<TKey, TValue> : TypeSerializer<IDictionary<TKey, TValue>>
     where TKey : notnull
 {
+    private static readonly bool ValueCanBeNull =
+        !typeof(TValue).IsValueType || Nullable.GetUnderlyingType(typeof(TValue)) != null;
+
     /// <summary>The serializer for the keys in the map.</summary>
     private readonly TypeSerializer<TKey> _keySerializer;
 
@@ -134,6 +141,13 @@ public sealed class MapSerializer<TKey, TValue> : TypeSerializer<IDictionary<TKe
             TKey key = _keySerializer.Deserialize(source);
 
             bool isNull = source.ReadBoolean();
+            if (isNull && !ValueCanBeNull)
+            {
+                throw new IOException(
+                    "The serialized map contains a null value, which the non-nullable value "
+                        + "type " + typeof(TValue) + " cannot represent; use a nullable value "
+                        + "type instead.");
+            }
             TValue value = isNull ? default! : _valueSerializer.Deserialize(source);
 
             map[key] = value;

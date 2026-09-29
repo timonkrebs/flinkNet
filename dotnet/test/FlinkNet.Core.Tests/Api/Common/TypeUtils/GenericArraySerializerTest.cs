@@ -107,4 +107,20 @@ public class GenericArraySerializerTest
         Assert.Throws<IOException>(
             () => snapshot.ReadSnapshot(3, new DataInputDeserializer(output.GetCopyOfBuffer())));
     }
+
+    /// <summary>A null element (valid in a Java Integer[]) cannot be represented by a
+    /// non-nullable value-type component and must be rejected, not replaced with 0.</summary>
+    [Fact]
+    public void TestNullElementInValueTypeArrayIsRejected()
+    {
+        var output = new DataOutputSerializer(32);
+        output.WriteInt(2);
+        output.WriteBoolean(true);
+        output.WriteInt(5);
+        output.WriteBoolean(false); // null element
+
+        var serializer = new GenericArraySerializer<int>(IntSerializer.Instance);
+        Assert.Throws<IOException>(
+            () => serializer.Deserialize(new DataInputDeserializer(output.GetCopyOfBuffer())));
+    }
 }

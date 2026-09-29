@@ -18,6 +18,8 @@
 
 using FlinkNet.Api.Common.TypeUtils;
 using FlinkNet.Api.Common.TypeUtils.Base;
+using FlinkNet.Core.Memory;
+using Xunit;
 
 namespace FlinkNet.Tests.Api.Common.TypeUtils.Base;
 
@@ -73,5 +75,20 @@ public class MapSerializerTest : SerializerTestBase<IDictionary<long, string>>
             }
         }
         return true;
+    }
+
+    /// <summary>A null value (valid for a Java Integer map value) cannot be represented by a
+    /// non-nullable value type and must be rejected, not replaced with default(TValue).</summary>
+    [Fact]
+    public void TestNullValueForNonNullableValueTypeIsRejected()
+    {
+        var output = new DataOutputSerializer(32);
+        output.WriteInt(1);
+        StringSerializer.Instance.Serialize("k", output);
+        output.WriteBoolean(true); // null value flag
+
+        var serializer = new MapSerializer<string, int>(StringSerializer.Instance, IntSerializer.Instance);
+        Assert.Throws<IOException>(
+            () => serializer.Deserialize(new DataInputDeserializer(output.GetCopyOfBuffer())));
     }
 }
