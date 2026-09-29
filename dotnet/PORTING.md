@@ -202,7 +202,9 @@ has a native C# equivalent:
      `TupleTypeInfo`, Date/BigInteger/... infos.
    - ✅ core.fs foundation: `Path` (URI semantics incl. Windows
      drives, normalization and dot-segment handling as in
-     `URI.normalize()`, which keeps unmatched `..`; `toUri()` maps to
+     `URI.normalize()`, which keeps unmatched `..`; equality, hashing
+     and ordering as in `java.net.URI`, with case-insensitive scheme
+     and server host; `toUri()` maps to
      the `PathUri` component record), `FileSystem` abstract base with a
      scheme registry (plugins/service-loading deferred),
      `FSDataInput/OutputStream` over `System.IO.Stream`,

@@ -254,4 +254,26 @@ public class PathTest
         Assert.Equal("../b", new Path("a/../../b").ToString());
         Assert.Equal("hdfs://host:8020/../b", new Path("hdfs://host:8020/a/../../b").ToString());
     }
+
+    /// <summary>Like java.net.URI (outcomes verified on a JDK): scheme and server host compare
+    /// case-insensitively; user info, path and registry-based authorities compare exactly.</summary>
+    [Fact]
+    public void TestEqualityFollowsUriSemantics()
+    {
+        AssertSame(new Path("FILE:/tmp/x"), new Path("file:/tmp/x"));
+        AssertSame(new Path("hdfs://NameNode:8020/x"), new Path("hdfs://namenode:8020/x"));
+
+        Assert.NotEqual(new Path("hdfs://USER@host:8020/x"), new Path("hdfs://user@host:8020/x"));
+        Assert.NotEqual(new Path("hdfs://host/X"), new Path("hdfs://host/x"));
+        Assert.NotEqual(new Path("hdfs://a_b/x"), new Path("hdfs://A_B/x"));
+        Assert.NotEqual(new Path("hdfs://host:8020/x"), new Path("hdfs://host:8021/x"));
+        Assert.True(new Path("hdfs://host:8020/x").CompareTo(new Path("hdfs://host:10000/x")) < 0);
+
+        static void AssertSame(Path a, Path b)
+        {
+            Assert.Equal(a, b);
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+            Assert.Equal(0, a.CompareTo(b));
+        }
+    }
 }

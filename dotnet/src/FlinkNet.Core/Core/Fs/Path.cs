@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using FlinkNet.Annotations;
@@ -326,16 +327,137 @@ public class Path : IComparable<Path>
         return buffer.ToString();
     }
 
-    public override bool Equals(object? obj) =>
-        obj is Path that
-            && _scheme == that._scheme
-            && _authority == that._authority
-            && _path == that._path;
+    // Equality, hashing and ordering follow java.net.URI, which Java's Path delegates to: the
+    // scheme compares case-insensitively, and so does the host of a server-based authority
+    // ([userinfo@]host[:port]); user info, port, path and registry-based authorities compare
+    // exactly.
 
-    public override int GetHashCode() => HashCode.Combine(_scheme, _authority, _path);
+    public override bool Equals(object? obj)
+    {
+        if (obj is not Path that
+            || !string.Equals(_scheme, that._scheme, StringComparison.OrdinalIgnoreCase)
+            || _path != that._path)
+        {
+            return false;
+        }
 
-    public int CompareTo(Path? other) =>
-        other is null ? 1 : string.CompareOrdinal(ToString(), other.ToString());
+        ServerAuthority? thisServer = ServerAuthority.TryParse(_authority);
+        ServerAuthority? thatServer = ServerAuthority.TryParse(that._authority);
+        if (thisServer is not null && thatServer is not null)
+        {
+            return thisServer.UserInfo == thatServer.UserInfo
+                && string.Equals(thisServer.Host, thatServer.Host, StringComparison.OrdinalIgnoreCase)
+                && thisServer.Port == thatServer.Port;
+        }
+        return thisServer is null && thatServer is null && _authority == that._authority;
+    }
+
+    public override int GetHashCode()
+    {
+        int schemeHash = _scheme is null ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(_scheme);
+        ServerAuthority? server = ServerAuthority.TryParse(_authority);
+        int authorityHash = server is null
+            ? _authority?.GetHashCode() ?? 0
+            : HashCode.Combine(
+                server.UserInfo,
+                StringComparer.OrdinalIgnoreCase.GetHashCode(server.Host),
+                server.Port);
+        return HashCode.Combine(schemeHash, authorityHash, _path);
+    }
+
+    public int CompareTo(Path? other)
+    {
+        if (other is null)
+        {
+            return 1;
+        }
+
+        int c = CompareNullable(_scheme, other._scheme, StringComparison.OrdinalIgnoreCase);
+        if (c != 0)
+        {
+            return c;
+        }
+
+        ServerAuthority? thisServer = ServerAuthority.TryParse(_authority);
+        ServerAuthority? thatServer = ServerAuthority.TryParse(other._authority);
+        if (thisServer is not null && thatServer is not null)
+        {
+            if ((c = CompareNullable(thisServer.UserInfo, thatServer.UserInfo, StringComparison.Ordinal)) != 0
+                || (c = string.Compare(thisServer.Host, thatServer.Host, StringComparison.OrdinalIgnoreCase)) != 0
+                || (c = thisServer.Port.CompareTo(thatServer.Port)) != 0)
+            {
+                return c;
+            }
+        }
+        else if ((c = CompareNullable(_authority, other._authority, StringComparison.Ordinal)) != 0)
+        {
+            return c;
+        }
+
+        return string.CompareOrdinal(_path, other._path);
+    }
+
+    /// <summary>Java's null-first string comparison of URI components.</summary>
+    private static int CompareNullable(string? a, string? b, StringComparison comparison) =>
+        a is null ? (b is null ? 0 : -1) : b is null ? 1 : string.Compare(a, b, comparison);
+
+    /// <summary>
+    /// A server-based authority as parsed by <c>java.net.URI</c>; authorities that do not parse
+    /// (e.g. with characters invalid in host names) are registry-based and compare exactly.
+    /// </summary>
+    private sealed record ServerAuthority(string? UserInfo, string Host, int Port)
+    {
+        private static readonly Regex Shape = new(
+            @"^(?:(?<userinfo>[^@/?#\[\]]*)@)?(?<host>\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.\-]+)(?::(?<port>[0-9]*))?\z",
+            RegexOptions.CultureInvariant);
+
+        private static readonly Regex Ipv4 = new(@"^[0-9]{1,3}(?:\.[0-9]{1,3}){3}\z");
+
+        private static readonly Regex Label = new(@"^[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?\z");
+
+        public static ServerAuthority? TryParse(string? authority)
+        {
+            if (authority is null)
+            {
+                return null;
+            }
+
+            Match match = Shape.Match(authority);
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            string host = match.Groups["host"].Value;
+            if (!host.StartsWith('[') && !Ipv4.IsMatch(host) && !IsHostname(host))
+            {
+                return null;
+            }
+
+            Group userInfo = match.Groups["userinfo"];
+            Group port = match.Groups["port"];
+            int portNumber = -1;
+            if (port.Success
+                && port.Length > 0
+                && !int.TryParse(port.Value, NumberStyles.None, CultureInfo.InvariantCulture, out portNumber))
+            {
+                return null;
+            }
+            return new ServerAuthority(userInfo.Success ? userInfo.Value : null, host, portNumber);
+        }
+
+        // hostname = domainlabel [ "." ] | 1*( domainlabel "." ) toplabel [ "." ], where a
+        // fully qualified host's rightmost label starts with a letter
+        private static bool IsHostname(string host)
+        {
+            string[] labels = (host.EndsWith('.') ? host[..^1] : host).Split('.');
+            if (labels.Any(label => !Label.IsMatch(label)))
+            {
+                return false;
+            }
+            return labels.Length == 1 || char.IsAsciiLetter(labels[^1][0]);
+        }
+    }
 
     /// <summary>Returns the number of elements in this path.</summary>
     public int Depth()
