@@ -92,10 +92,11 @@ public class LocalFileSystemTest : IDisposable
             Assert.Equal<byte[]>(testBytes, buffer);
         }
 
-        // block locations point at localhost
+        // a single block without location information (as in Java)
         IBlockLocation[] locations = lfs.GetFileBlockLocations(status, 0, status.Len);
         Assert.Single(locations);
-        Assert.Equal(new[] { "localhost" }, locations[0].GetHosts());
+        Assert.Empty(locations[0].GetHosts());
+        Assert.Equal(status.Len, locations[0].Length);
 
         // NO_OVERWRITE refuses to overwrite
         Assert.Throws<IOException>(() => lfs.Create(pathToTmpFile, FileSystem.WriteMode.NoOverwrite));
@@ -263,5 +264,22 @@ public class LocalFileSystemTest : IDisposable
 
         Assert.False(lfs.Rename(src, dst));
         Assert.True(lfs.Exists(src));
+    }
+
+    /// <summary>Like Java's LocalFileStatus, the length is snapshotted when the status is
+    /// created, and local files report no access time.</summary>
+    [Fact]
+    public void TestFileStatusSnapshotsLength()
+    {
+        FileSystem lfs = FileSystem.GetLocalFileSystem();
+        Path file = TempPath("status_file");
+        File.WriteAllBytes(file.GetPath(), new byte[5]);
+
+        IFileStatus status = lfs.GetFileStatus(file);
+        File.Delete(file.GetPath());
+
+        Assert.Equal(5, status.Len);
+        Assert.Equal(5, status.BlockSize);
+        Assert.Equal(0, status.AccessTime);
     }
 }

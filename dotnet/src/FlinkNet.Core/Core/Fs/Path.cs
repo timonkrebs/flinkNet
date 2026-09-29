@@ -207,7 +207,9 @@ public class Path : IComparable<Path>
         return path;
     }
 
-    /// <summary>Removes "." and ".." segments, like Java's <c>URI.normalize()</c>.</summary>
+    /// <summary>Removes "." and ".." segments, like Java's <c>URI.normalize()</c>. A ".." with
+    /// no preceding name to cancel is kept, also in absolute paths ("/a/../../b" normalizes to
+    /// "/../b"), as <c>URI.normalize()</c> does.</summary>
     private static string NormalizeSegments(string path, bool absolute)
     {
         if (!path.Contains('.'))
@@ -226,12 +228,6 @@ public class Path : IComparable<Path>
                 case ".."
                     when result.Count > 0 && result[^1] != ".." && result[^1].Length > 0:
                     result.RemoveAt(result.Count - 1);
-                    break;
-                case "..":
-                    if (!absolute)
-                    {
-                        result.Add(segment);
-                    }
                     break;
                 default:
                     result.Add(segment);

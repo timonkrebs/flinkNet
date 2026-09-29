@@ -199,7 +199,8 @@ has a native C# equivalent:
      object-boxing adapters). Deferred: comparators, TypeExtractor,
      `TupleTypeInfo`, Date/BigInteger/... infos.
    - ✅ core.fs foundation: `Path` (URI semantics incl. Windows
-     drives, normalization and dot-segment removal; `toUri()` maps to
+     drives, normalization and dot-segment handling as in
+     `URI.normalize()`, which keeps unmatched `..`; `toUri()` maps to
      the `PathUri` component record), `FileSystem` abstract base with a
      scheme registry (plugins/service-loading deferred),
      `FSDataInput/OutputStream` over `System.IO.Stream`,

@@ -20,12 +20,16 @@ using FlinkNet.Annotations;
 
 namespace FlinkNet.Core.Fs.Local;
 
-/// <summary>Implementation of the <see cref="IBlockLocation"/> interface for a local file system.</summary>
+/// <summary>
+/// Implementation of the <see cref="IBlockLocation"/> interface for a local file system.
+///
+/// <para>Local files have only one block that represents the entire file. The block has no
+/// location information, because it is not accessible where the files (or their block) actually
+/// reside, especially in cases where the files are on a mounted file system.</para>
+/// </summary>
 [Internal]
 public class LocalBlockLocation : IBlockLocation
 {
-    private const string LocalHost = "localhost";
-
     private readonly long _length;
 
     public LocalBlockLocation(long length)
@@ -33,7 +37,7 @@ public class LocalBlockLocation : IBlockLocation
         _length = length;
     }
 
-    public string[] GetHosts() => [LocalHost];
+    public string[] GetHosts() => [];
 
     public long Length => _length;
 

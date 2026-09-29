@@ -241,4 +241,17 @@ public class PathTest
             local.Replace('\\', '/').TrimStart('/'),
             path.GetPath().TrimStart('/'));
     }
+
+    /// <summary>Like java.net.URI.normalize() (outcomes verified on a JDK), a ".." with no name
+    /// to cancel is kept, also in absolute paths, instead of being dropped.</summary>
+    [Fact]
+    public void TestNormalizationKeepsUnmatchedParentSegments()
+    {
+        Assert.Equal("/../b", new Path("/a/../../b").ToString());
+        Assert.Equal("/..", new Path("/..").ToString());
+        Assert.Equal("/../c/d", new Path("/a/b/../../../c/d").ToString());
+        Assert.Equal("/", new Path("/a/..").ToString());
+        Assert.Equal("../b", new Path("a/../../b").ToString());
+        Assert.Equal("hdfs://host:8020/../b", new Path("hdfs://host:8020/a/../../b").ToString());
+    }
 }

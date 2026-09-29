@@ -33,6 +33,10 @@ public class LocalFileStatus : IFileStatus
     /// <summary>The path of this status.</summary>
     private readonly Path _path;
 
+    /// <summary>The length of the file, snapshotted at construction like Java's, so later
+    /// deletions or replacements do not change or break this status.</summary>
+    private readonly long _len;
+
     /// <summary>
     /// Creates a <c>LocalFileStatus</c> object from a given <see cref="FileSystemInfo"/> object.
     /// </summary>
@@ -44,13 +48,15 @@ public class LocalFileStatus : IFileStatus
         // Java builds this from File.toURI().getPath(), which always carries a leading
         // slash; without it a Windows drive letter would parse as a relative path
         _path = new Path(fs.GetUri().Scheme + ":" + Path.AbsoluteUriPath(f.FullName));
+        _len = f is FileInfo info && info.Exists ? info.Length : 0;
     }
 
-    public long AccessTime => new DateTimeOffset(_file.LastAccessTimeUtc).ToUnixTimeMilliseconds();
+    // we don't have access times for local files (as in Java)
+    public long AccessTime => 0;
 
-    public long BlockSize => Len;
+    public long BlockSize => _len;
 
-    public long Len => _file is FileInfo info ? info.Length : 0;
+    public long Len => _len;
 
     public long ModificationTime =>
         new DateTimeOffset(_file.LastWriteTimeUtc).ToUnixTimeMilliseconds();
