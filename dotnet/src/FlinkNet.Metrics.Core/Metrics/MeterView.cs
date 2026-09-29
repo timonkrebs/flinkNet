@@ -116,20 +116,8 @@ public class MeterView : IMeter, IView
 
         public void Dec(long n) => throw new NotSupportedException();
 
-        // Java's Number.longValue() truncates floating values toward zero, where
-        // IConvertible.ToInt64 would round to the nearest integer
-        public long Count
-        {
-            get
-            {
-                T value = numberGauge.GetValue();
-                return value.GetTypeCode() switch
-                {
-                    TypeCode.Single or TypeCode.Double or TypeCode.Decimal =>
-                        (long)value.ToDouble(System.Globalization.CultureInfo.InvariantCulture),
-                    _ => value.ToInt64(System.Globalization.CultureInfo.InvariantCulture),
-                };
-            }
-        }
+        // Java's Number.longValue(): floating values truncate toward zero, decimals truncate
+        // exactly, where IConvertible.ToInt64 would round
+        public long Count => JavaNumbers.ToLong(numberGauge.GetValue());
     }
 }

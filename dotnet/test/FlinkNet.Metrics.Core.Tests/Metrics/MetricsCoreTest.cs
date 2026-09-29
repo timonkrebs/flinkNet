@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+using System.Numerics;
 using FlinkNet.Metrics;
 using FlinkNet.Metrics.Groups;
 using FlinkNet.Metrics.Reporter;
@@ -118,6 +119,14 @@ public class MetricsCoreTest
         Assert.Equal(int.MaxValue, config.GetInteger("big", 0));
         Assert.Equal(0, config.GetInteger("nan", 7));
         Assert.Equal(1, config.GetInteger("wide", 0));
+
+        // decimals truncate exactly and big integers keep their low-order bits, like Java's
+        // BigDecimal and BigInteger
+        config["decimal"] = 9007199254740993.7m;
+        config["bigInteger"] = BigInteger.Pow(2, 64) + 5;
+        Assert.Equal(9007199254740993L, config.GetLong("decimal", 0L));
+        Assert.Equal(5L, config.GetLong("bigInteger", 0L));
+        Assert.Equal(5, config.GetInteger("bigInteger", 0));
 
         Assert.Equal(1L, config.GetLong("pos", 0L));
         Assert.Equal(-1L, config.GetLong("neg", 0L));

@@ -139,6 +139,32 @@ public class MeterViewTest
         Assert.Equal(-1, m.Count);
     }
 
+    /// <summary>Java's BigDecimal.longValue() truncates exactly; a detour through double would
+    /// lose precision above 2^53.</summary>
+    [Fact]
+    public void TestGaugeBackedMeterKeepsDecimalPrecision()
+    {
+        MeterView m = MeterView.ForGauge(new DecimalGauge(9007199254740993.7m));
+        Assert.Equal(9007199254740993L, m.Count);
+    }
+
+    /// <summary>Java's (long) cast saturates floating values and maps NaN to 0.</summary>
+    [Fact]
+    public void TestGaugeBackedMeterSaturatesFloatingValues()
+    {
+        double value = 1e30;
+        MeterView m = MeterView.ForGauge(new DoubleFunctionGauge(() => value));
+        Assert.Equal(long.MaxValue, m.Count);
+
+        value = double.NaN;
+        Assert.Equal(0L, m.Count);
+    }
+
+    private sealed class DecimalGauge(decimal value) : IGauge<decimal>
+    {
+        public decimal GetValue() => value;
+    }
+
     private sealed class FunctionGauge(Func<long> supplier) : IGauge<long>
     {
         public long GetValue() => supplier();
