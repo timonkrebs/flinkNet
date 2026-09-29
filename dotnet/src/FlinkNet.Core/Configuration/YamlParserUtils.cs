@@ -421,6 +421,12 @@ public static partial class YamlParserUtils
                     // SnakeYAML's block style puts the dash at the key's indentation
                     if (TryAsNestedMap(element, out Dictionary<string, object?>? elementMap))
                     {
+                        // an empty map item has no block lines to share the dash with
+                        if (elementMap.Count == 0)
+                        {
+                            lines.Add(padding + "- {}");
+                            continue;
+                        }
                         var sub = new List<string>();
                         EmitBlockMapping(elementMap, indent + 2, sub);
                         // the first entry of a map item shares the dash line; the dash plus

@@ -171,6 +171,34 @@ public class YamlParserUtilsTest : IDisposable
         Assert.Empty(Assert.IsAssignableFrom<System.Collections.IDictionary>(nested["map"]));
     }
 
+    /// <summary>An empty map inside a list has no block lines to share the list dash with; it
+    /// is dumped as <c>- {}</c> (as SnakeYAML does) instead of crashing.</summary>
+    [Fact]
+    public void TestDumpYamlEmitsEmptyMapListItems()
+    {
+        var flat = new Dictionary<string, object>
+        {
+            {
+                "a.list",
+                new List<object>
+                {
+                    new Dictionary<string, object?>(),
+                    new Dictionary<string, object?> { { "k", "v" } },
+                }
+            },
+        };
+
+        IList<string> lines = YamlParserUtils.ConvertAndDumpYamlFromFlatMap(flat);
+        Assert.Equal(new[] { "a:", "  list:", "  - {}", "  - k: v" }, lines);
+
+        var reloaded = YamlParserUtils.ConvertToObject<Dictionary<object, object?>>(
+            string.Join("\n", lines));
+        var nested = Assert.IsAssignableFrom<System.Collections.IDictionary>(reloaded!["a"]);
+        var items = Assert.IsAssignableFrom<System.Collections.IList>(nested["list"]);
+        Assert.Empty(Assert.IsAssignableFrom<System.Collections.IDictionary>(items[0]));
+        Assert.Single(Assert.IsAssignableFrom<System.Collections.IDictionary>(items[1]));
+    }
+
     /// <summary>Flow indicators terminate plain scalars inside flow collections, so list and
     /// map elements containing them must be quoted to survive a round-trip.</summary>
     [Fact]
