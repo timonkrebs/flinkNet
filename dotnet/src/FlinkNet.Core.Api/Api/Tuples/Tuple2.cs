@@ -55,7 +55,12 @@ public class Tuple2<T0, T1> : Tuple
     /// <summary>Field 1 of the tuple.</summary>
     public T1? F1;
 
-    /// <summary>Creates a new tuple where all fields are null.</summary>
+    /// <summary>
+    /// Creates a new tuple where all fields have their default value: null for reference and
+    /// nullable types. PORT NOTE: a field of a non-nullable value type (e.g. <c>int</c>) holds
+    /// <c>default(T)</c> and cannot be null; use the nullable form (<c>int?</c>) for Java's
+    /// nullable boxed fields such as <c>Integer</c>.
+    /// </summary>
     public Tuple2() { }
 
     /// <summary>Creates a new tuple and assigns the given values to the tuple's fields.</summary>
@@ -82,10 +87,10 @@ public class Tuple2<T0, T1> : Tuple
         switch (pos)
         {
             case 0:
-                F0 = (T0?)(object?)value;
+                F0 = CastField<T0>(value, 0);
                 break;
             case 1:
-                F1 = (T1?)(object?)value;
+                F1 = CastField<T1>(value, 1);
                 break;
             default:
                 throw new IndexOutOfRangeException(pos.ToString());

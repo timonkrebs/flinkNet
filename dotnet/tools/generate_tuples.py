@@ -176,6 +176,23 @@ public abstract class Tuple
     /// <see cref="object.ToString"/> and formatting (possibly nested) arrays and <c>null</c>.
     /// Mirrors the format of Java's <c>Arrays.deepToString</c>.
     /// </summary>
+    /// <summary>
+    /// Casts a value for <see cref="SetField{{T}}"/>. A null cannot be stored in a field of a
+    /// non-nullable value type, so it is rejected with a clear error instead of an unboxing
+    /// failure (see the constructor PORT NOTE of the tuple classes).
+    /// </summary>
+    private protected static TField? CastField<TField>(object? value, int pos)
+    {{
+        if (value is null && default(TField) is not null)
+        {{
+            throw new ArgumentNullException(
+                nameof(value),
+                $"Field {{pos}} has the non-nullable value type {{typeof(TField)}} and cannot be "
+                    + "null; use a nullable type (e.g. int?) for fields that may be null.");
+        }}
+        return (TField?)value;
+    }}
+
     internal static string ArrayAwareToString(object? o)
     {{
         if (o is null)
@@ -297,7 +314,7 @@ def gen_tuple(arity):
     )
     set_cases = "\n".join(
         f"""            case {i}:
-                F{i} = (T{i}?)(object?)value;
+                F{i} = CastField<T{i}>(value, {i});
                 break;"""
         for i in range(arity)
     )
@@ -362,7 +379,12 @@ public class Tuple{arity}<{tps}> : Tuple
 {{
 {field_decls}
 
-    /// <summary>Creates a new tuple where all fields are null.</summary>
+    /// <summary>
+    /// Creates a new tuple where all fields have their default value: null for reference and
+    /// nullable types. PORT NOTE: a field of a non-nullable value type (e.g. <c>int</c>) holds
+    /// <c>default(T)</c> and cannot be null; use the nullable form (<c>int?</c>) for Java's
+    /// nullable boxed fields such as <c>Integer</c>.
+    /// </summary>
     public Tuple{arity}() {{ }}
 
     /// <summary>Creates a new tuple and assigns the given values to the tuple's fields.</summary>

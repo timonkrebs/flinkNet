@@ -111,7 +111,12 @@ public class Tuple16<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
     /// <summary>Field 15 of the tuple.</summary>
     public T15? F15;
 
-    /// <summary>Creates a new tuple where all fields are null.</summary>
+    /// <summary>
+    /// Creates a new tuple where all fields have their default value: null for reference and
+    /// nullable types. PORT NOTE: a field of a non-nullable value type (e.g. <c>int</c>) holds
+    /// <c>default(T)</c> and cannot be null; use the nullable form (<c>int?</c>) for Java's
+    /// nullable boxed fields such as <c>Integer</c>.
+    /// </summary>
     public Tuple16() { }
 
     /// <summary>Creates a new tuple and assigns the given values to the tuple's fields.</summary>
@@ -180,52 +185,52 @@ public class Tuple16<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13,
         switch (pos)
         {
             case 0:
-                F0 = (T0?)(object?)value;
+                F0 = CastField<T0>(value, 0);
                 break;
             case 1:
-                F1 = (T1?)(object?)value;
+                F1 = CastField<T1>(value, 1);
                 break;
             case 2:
-                F2 = (T2?)(object?)value;
+                F2 = CastField<T2>(value, 2);
                 break;
             case 3:
-                F3 = (T3?)(object?)value;
+                F3 = CastField<T3>(value, 3);
                 break;
             case 4:
-                F4 = (T4?)(object?)value;
+                F4 = CastField<T4>(value, 4);
                 break;
             case 5:
-                F5 = (T5?)(object?)value;
+                F5 = CastField<T5>(value, 5);
                 break;
             case 6:
-                F6 = (T6?)(object?)value;
+                F6 = CastField<T6>(value, 6);
                 break;
             case 7:
-                F7 = (T7?)(object?)value;
+                F7 = CastField<T7>(value, 7);
                 break;
             case 8:
-                F8 = (T8?)(object?)value;
+                F8 = CastField<T8>(value, 8);
                 break;
             case 9:
-                F9 = (T9?)(object?)value;
+                F9 = CastField<T9>(value, 9);
                 break;
             case 10:
-                F10 = (T10?)(object?)value;
+                F10 = CastField<T10>(value, 10);
                 break;
             case 11:
-                F11 = (T11?)(object?)value;
+                F11 = CastField<T11>(value, 11);
                 break;
             case 12:
-                F12 = (T12?)(object?)value;
+                F12 = CastField<T12>(value, 12);
                 break;
             case 13:
-                F13 = (T13?)(object?)value;
+                F13 = CastField<T13>(value, 13);
                 break;
             case 14:
-                F14 = (T14?)(object?)value;
+                F14 = CastField<T14>(value, 14);
                 break;
             case 15:
-                F15 = (T15?)(object?)value;
+                F15 = CastField<T15>(value, 15);
                 break;
             default:
                 throw new IndexOutOfRangeException(pos.ToString());

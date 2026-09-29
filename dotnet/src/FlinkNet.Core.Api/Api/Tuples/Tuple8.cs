@@ -79,7 +79,12 @@ public class Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> : Tuple
     /// <summary>Field 7 of the tuple.</summary>
     public T7? F7;
 
-    /// <summary>Creates a new tuple where all fields are null.</summary>
+    /// <summary>
+    /// Creates a new tuple where all fields have their default value: null for reference and
+    /// nullable types. PORT NOTE: a field of a non-nullable value type (e.g. <c>int</c>) holds
+    /// <c>default(T)</c> and cannot be null; use the nullable form (<c>int?</c>) for Java's
+    /// nullable boxed fields such as <c>Integer</c>.
+    /// </summary>
     public Tuple8() { }
 
     /// <summary>Creates a new tuple and assigns the given values to the tuple's fields.</summary>
@@ -124,28 +129,28 @@ public class Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> : Tuple
         switch (pos)
         {
             case 0:
-                F0 = (T0?)(object?)value;
+                F0 = CastField<T0>(value, 0);
                 break;
             case 1:
-                F1 = (T1?)(object?)value;
+                F1 = CastField<T1>(value, 1);
                 break;
             case 2:
-                F2 = (T2?)(object?)value;
+                F2 = CastField<T2>(value, 2);
                 break;
             case 3:
-                F3 = (T3?)(object?)value;
+                F3 = CastField<T3>(value, 3);
                 break;
             case 4:
-                F4 = (T4?)(object?)value;
+                F4 = CastField<T4>(value, 4);
                 break;
             case 5:
-                F5 = (T5?)(object?)value;
+                F5 = CastField<T5>(value, 5);
                 break;
             case 6:
-                F6 = (T6?)(object?)value;
+                F6 = CastField<T6>(value, 6);
                 break;
             case 7:
-                F7 = (T7?)(object?)value;
+                F7 = CastField<T7>(value, 7);
                 break;
             default:
                 throw new IndexOutOfRangeException(pos.ToString());
