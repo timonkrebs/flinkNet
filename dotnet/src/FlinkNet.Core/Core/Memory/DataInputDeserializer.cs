@@ -335,6 +335,12 @@ public class DataInputDeserializer : IDataInputView
             throw new ArgumentException("The length len cannot be negative.");
         }
 
+        if (b.Length - off < len)
+        {
+            throw new ArgumentException(
+                "Byte array does not provide enough space to store requested data.");
+        }
+
         if (len == 0)
         {
             return 0;

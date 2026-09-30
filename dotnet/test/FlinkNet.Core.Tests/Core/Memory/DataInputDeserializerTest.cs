@@ -70,4 +70,15 @@ public class DataInputDeserializerTest
         Assert.Equal("last", dis.ReadLine());
         Assert.Null(dis.ReadLine());
     }
+
+    /// <summary>Like Java, a destination range too small for the requested length is rejected
+    /// even when fewer bytes remain to be read.</summary>
+    [Fact]
+    public void TestReadRejectsTooSmallDestination()
+    {
+        byte[] source = [1];
+        var dis = new DataInputDeserializer(source, 0, source.Length);
+        Assert.Throws<ArgumentException>(() => dis.Read(new byte[1], 0, 100));
+        Assert.Equal(1, dis.Available);
+    }
 }
