@@ -21,6 +21,82 @@ under the License.
 
 This file provides guidance for AI coding agents working with the Apache Flink codebase.
 
+## FlinkNet (.NET port) — read this first
+
+This repository is a fork that ports Apache Flink to .NET/C#. All new work happens in the
+`dotnet/` directory. The Java sources are kept unmodified as the behavioral reference for the
+port. The upstream sections after this one describe the Java codebase: consult them to
+understand the reference, but their build, style, commit and PR rules do not apply to port
+work. Where this section and an upstream section disagree, this section wins.
+
+### Prerequisites
+
+- .NET 8 SDK (projects target `net8.0`, C# 12). If `dotnet` is missing, install it with
+  `curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0` and add
+  `~/.dotnet` to `PATH`.
+- Python 3 (only for the tuple generator).
+
+### Commands (run from `dotnet/`)
+
+- Build: `dotnet build` (warnings are errors via `Directory.Build.props`)
+- All tests: `dotnet test`
+- One test project: `dotnet test test/FlinkNet.Core.Tests`
+- One test class: `dotnet test --filter "FullyQualifiedName~ConfigurationTest"`
+- Regenerate the tuple classes: `python3 tools/generate_tuples.py`
+
+### Conventions
+
+- `dotnet/PORTING.md` is the porting contract: module status, Java→C# namespace mapping,
+  language conventions, and the roadmap. Follow it, and update its status and roadmap entries
+  in the same change that ports or fixes something.
+- Port bottom-up along the Maven dependency graph; one Maven module maps to one project
+  (`FlinkNet.<Module>`).
+- Keep behavior, wire formats and snapshot formats structurally identical to the Java
+  reference. Every deliberate deviation (e.g. an upstream bug that is fixed, or a
+  platform-forced difference) gets a `PORT NOTE` comment at the site.
+- Mirror the Java stability annotations with the attributes in `FlinkNet.Annotations`
+  (`[Public]`, `[PublicEvolving]`, `[Experimental]`, `[Internal]`).
+- Every new file carries the Apache License 2.0 header (HTML comment in Markdown, `#` comments
+  in the `.sln` below its format header).
+- Generated files (the tuples under `FlinkNet.Core.Api/Api/Tuples`) are never edited by hand;
+  change `tools/generate_tuples.py` and regenerate.
+- Reuse existing helpers (e.g. `FlinkNet.Util`) before adding new ones.
+
+### Testing
+
+- xUnit. Port the corresponding Java test where one exists; mirror the source layout under
+  `dotnet/test/`.
+- For bug fixes, verify that the new test fails without the fix before confirming that it passes
+  with it.
+- `dotnet test` must be green before every push.
+
+### Commits and PRs for port work
+
+- Commit title: `[dotnet][<area>] Description`, where `<area>` is the ported module or concern
+  (e.g. `core`, `core-api`, `datastream-api`, `metrics`, `ci`, `docs`). Port work has no Flink
+  JIRA tickets; do not ask for one.
+- One logical change per commit; separate cleanup/refactoring from functional changes.
+- AI-assisted commits end with a `Generated-by: <Tool Name and Version>` trailer. Never add
+  `Co-Authored-By` with an AI agent as co-author. (Earlier commits on the porting branch
+  predate this rule and are not rewritten.)
+- PR titles follow the commit title format.
+
+### CI
+
+- `.github/workflows/ci.yml` ("FlinkNet CI") restores, builds, tests and packs the `dotnet/`
+  solution on pull requests and pushes to `master`. The upstream Java workflows were removed
+  from this fork.
+
+### Ask first (port)
+
+- Changes to wire or snapshot formats beyond what the Java reference does.
+- New NuGet dependencies.
+- Changes to the public API shape that deviate from the Java reference.
+
+---
+
+The sections below are the upstream Apache Flink agent guidance for the Java codebase.
+
 ## Prerequisites
 
 - Java 11, 17 (default), or 21. Java 11 syntax must be used in all modules. Java 17 syntax (records, sealed classes, pattern matching) is only permitted in the `flink-tests-java17` module.
