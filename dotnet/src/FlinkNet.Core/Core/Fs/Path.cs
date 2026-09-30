@@ -62,11 +62,16 @@ public class Path : IComparable<Path>
     // ------------------------------------------------------------------------
 
     /// <summary>
-    /// Constructs a path object from a given URI components.
+    /// Constructs a path object from a given URI components. Like Java's <c>Path(URI)</c>, the
+    /// components are taken as given, without normalization (so e.g. a UNC path
+    /// <c>//server/share</c> stays a local path without an authority).
     /// </summary>
     public Path(PathUri uri)
-        : this(uri.Scheme, uri.Authority, uri.UriPath)
     {
+        ArgumentNullException.ThrowIfNull(uri);
+        _scheme = uri.Scheme;
+        _authority = string.IsNullOrEmpty(uri.Authority) ? null : uri.Authority;
+        _path = uri.UriPath;
     }
 
     /// <summary>Resolve a child path against a parent path.</summary>
@@ -97,6 +102,17 @@ public class Path : IComparable<Path>
             _authority = child._authority;
             string childOwnPath = NormalizePath(child._path);
             _path = NormalizeSegments(childOwnPath, childOwnPath.StartsWith('/'));
+            return;
+        }
+
+        // PORT NOTE: a network-path reference ("//host/x") keeps its own authority, as in
+        // URI.resolve. Java's leading-slash stripping re-creates such a child as
+        // new URI(null, "host", "x"), which concatenates to "//hostx" and mangles the authority.
+        if (child._authority is not null)
+        {
+            _scheme = parent._scheme;
+            _authority = child._authority;
+            _path = child._path;
             return;
         }
 
@@ -515,7 +531,7 @@ public class Path : IComparable<Path>
     /// <summary>Creates a path for the given local file, as a file URI like Java's
     /// <c>new Path(file.toURI())</c>.</summary>
     public static Path FromLocalFile(FileInfo file) =>
-        new("file:" + AbsoluteUriPath(file.FullName));
+        new(new PathUri("file", null, AbsoluteUriPath(file.FullName)));
 
     /// <summary>Renders a local filesystem path the way Java's <c>File.toURI().getPath()</c>
     /// does: forward slashes with a leading slash ("/C:/tmp/x" on Windows).</summary>

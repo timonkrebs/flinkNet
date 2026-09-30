@@ -45,9 +45,10 @@ public class LocalFileStatus : IFileStatus
     public LocalFileStatus(FileSystemInfo f, FileSystem fs)
     {
         _file = f;
-        // Java builds this from File.toURI().getPath(), which always carries a leading
-        // slash; without it a Windows drive letter would parse as a relative path
-        _path = new Path(fs.GetUri().Scheme + ":" + Path.AbsoluteUriPath(f.FullName));
+        // PORT NOTE: Java parses scheme + ":" + File.toURI().getPath() as a string, which
+        // turns the server of a UNC path (//server/share) into an authority; the port builds
+        // the path from components, keeping it a local path like Path.fromLocalFile does
+        _path = new Path(new PathUri(fs.GetUri().Scheme, null, Path.AbsoluteUriPath(f.FullName)));
         _len = f is FileInfo info && info.Exists ? info.Length : 0;
     }
 

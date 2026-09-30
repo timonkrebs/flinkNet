@@ -36,12 +36,12 @@ public class LocalFileSystem : FileSystem
     /// <summary>Path pointing to the current working directory, as a file URI like Java's
     /// <c>new File(...).toURI()</c>.</summary>
     private readonly Path _workingDir =
-        new("file:" + Path.AbsoluteUriPath(Directory.GetCurrentDirectory()));
+        new(new PathUri("file", null, Path.AbsoluteUriPath(Directory.GetCurrentDirectory())));
 
     /// <summary>Path pointing to the current user home directory, as a file URI.</summary>
     private readonly Path _homeDir =
-        new("file:" + Path.AbsoluteUriPath(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
+        new(new PathUri("file", null, Path.AbsoluteUriPath(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))));
 
     public override IBlockLocation[] GetFileBlockLocations(IFileStatus file, long start, long len) =>
         [new LocalBlockLocation(file.Len)];

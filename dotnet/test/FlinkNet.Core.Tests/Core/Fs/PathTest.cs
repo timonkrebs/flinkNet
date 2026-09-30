@@ -276,4 +276,29 @@ public class PathTest
             Assert.Equal(0, a.CompareTo(b));
         }
     }
+
+    /// <summary>A network-path child ("//host/x") keeps its own authority, as in URI.resolve
+    /// (Java mangles it; see the PORT NOTE on the constructor).</summary>
+    [Fact]
+    public void TestResolveNetworkPathChild()
+    {
+        Assert.Equal(
+            "hdfs://other/x",
+            new Path(new Path("hdfs://parent/base"), new Path("//other/x")).ToString());
+    }
+
+    /// <summary>Like Java's Path(URI), components are taken as given: a UNC path stays a local
+    /// path without an authority, so the local file system accepts it.</summary>
+    [Fact]
+    public void TestUriComponentsAreTakenAsGiven()
+    {
+        Assert.Equal("//server/share/data", Path.AbsoluteUriPath(@"\\server\share\data"));
+
+        var unc = new Path(new PathUri("file", null, "//server/share/data"));
+        Assert.Null(unc.ToUri().Authority);
+        Assert.Equal("//server/share/data", unc.GetPath());
+        Assert.Same(FileSystem.GetLocalFileSystem(), FileSystem.Get(unc));
+
+        Assert.Equal("/tmp/dir/", new Path(new PathUri("file", null, "/tmp/dir/")).GetPath());
+    }
 }
