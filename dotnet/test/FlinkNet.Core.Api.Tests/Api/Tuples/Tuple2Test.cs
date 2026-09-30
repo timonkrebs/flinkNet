@@ -77,4 +77,22 @@ public class Tuple2Test
         Assert.True(Tuple2.Of(1.5, "x").Equals(Tuple2.Of(1.5, "x")));
         Assert.False(Tuple2.Of(1.5, "x").Equals(null));
     }
+
+    /// <summary>Like Java's toString, rendering is culture-independent (a comma decimal separator
+    /// would make "(1,5,2,5)" ambiguous) and booleans print as in Java.</summary>
+    [Fact]
+    public void TestToStringIsCultureIndependent()
+    {
+        System.Globalization.CultureInfo previous = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+            Assert.Equal("(1.5,2.5)", Tuple2.Of(1.5, 2.5).ToString());
+            Assert.Equal("(true,false)", Tuple2.Of(true, false).ToString());
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previous;
+        }
+    }
 }

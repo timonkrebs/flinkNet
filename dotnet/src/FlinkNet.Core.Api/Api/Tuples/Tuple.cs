@@ -22,6 +22,7 @@
 //  (C# port of org.apache.flink.api.java.tuple.TupleGenerator)
 // --------------------------------------------------------------
 
+using System.Globalization;
 using System.Text;
 using FlinkNet.Annotations;
 using FlinkNet.Types;
@@ -206,7 +207,14 @@ public abstract class Tuple
             return builder.Append(']').ToString();
         }
 
-        return o.ToString() ?? "null";
+        // culture-independent like Java's toString: a comma decimal separator would make
+        // (1,5,2,5) ambiguous; booleans print like Java's
+        return o switch
+        {
+            bool b => b ? "true" : "false",
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+            _ => o.ToString() ?? "null",
+        };
     }
 
     /// <summary>
