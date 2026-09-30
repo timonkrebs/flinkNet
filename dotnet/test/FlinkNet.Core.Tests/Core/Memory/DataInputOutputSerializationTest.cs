@@ -222,4 +222,39 @@ public class DataInputOutputSerializationTest
         Assert.Equal(Math.E, input.ReadDouble());
         Assert.Equal("Flink auf .NET — 流处理", input.ReadUTF());
     }
+
+    /// <summary>Java's DataOutput writes canonical NaN bits (verified on a JDK: 7fc00000 and
+    /// 7ff8000000000000), whatever the NaN's payload or sign.</summary>
+    [Fact]
+    public void TestNaNIsWrittenCanonically()
+    {
+        float payloadFloatNaN = BitConverter.Int32BitsToSingle(0x7fc00001);
+        double negativeNaN = BitConverter.Int64BitsToDouble(unchecked((long)0xfff8000000000000L));
+
+        foreach (Func<Stream?, IDataOutputView> create in new Func<Stream?, IDataOutputView>[]
+        {
+            _ => new DataOutputSerializer(32),
+            stream => new DataOutputViewStreamWrapper(stream!),
+        })
+        {
+            var stream = new MemoryStream();
+            IDataOutputView output = create(stream);
+            output.WriteFloat(float.NaN);
+            output.WriteFloat(payloadFloatNaN);
+            output.WriteDouble(double.NaN);
+            output.WriteDouble(negativeNaN);
+
+            byte[] bytes = output is DataOutputSerializer serializer
+                ? serializer.GetCopyOfBuffer()
+                : stream.ToArray();
+            Assert.Equal<byte[]>(
+                [
+                    0x7f, 0xc0, 0x00, 0x00,
+                    0x7f, 0xc0, 0x00, 0x00,
+                    0x7f, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x7f, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                ],
+                bytes);
+        }
+    }
 }

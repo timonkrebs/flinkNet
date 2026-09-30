@@ -155,9 +155,14 @@ public class DataOutputSerializer : IDataOutputView, IMemorySegmentWritable
         }
     }
 
-    public void WriteDouble(double v) => WriteLong(BitConverter.DoubleToInt64Bits(v));
+    // Java's DataOutput writes Float.floatToIntBits / Double.doubleToLongBits, which collapse
+    // every NaN to the canonical bits; BitConverter keeps payload and sign (.NET's NaN constants
+    // even carry the sign bit), so NaNs are canonicalized here
+    public void WriteDouble(double v) =>
+        WriteLong(double.IsNaN(v) ? 0x7ff8000000000000L : BitConverter.DoubleToInt64Bits(v));
 
-    public void WriteFloat(float v) => WriteInt(BitConverter.SingleToInt32Bits(v));
+    public void WriteFloat(float v) =>
+        WriteInt(float.IsNaN(v) ? 0x7fc00000 : BitConverter.SingleToInt32Bits(v));
 
     public void WriteInt(int v)
     {

@@ -95,9 +95,12 @@ public class DataOutputViewStreamWrapper : IDataOutputView
         _out.Write(buf);
     }
 
-    public void WriteFloat(float v) => WriteInt(BitConverter.SingleToInt32Bits(v));
+    // canonical NaN bits, like Java's DataOutputStream (see DataOutputSerializer)
+    public void WriteFloat(float v) =>
+        WriteInt(float.IsNaN(v) ? 0x7fc00000 : BitConverter.SingleToInt32Bits(v));
 
-    public void WriteDouble(double v) => WriteLong(BitConverter.DoubleToInt64Bits(v));
+    public void WriteDouble(double v) =>
+        WriteLong(double.IsNaN(v) ? 0x7ff8000000000000L : BitConverter.DoubleToInt64Bits(v));
 
     public void WriteBytes(string s)
     {
