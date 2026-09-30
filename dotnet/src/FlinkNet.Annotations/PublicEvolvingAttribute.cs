@@ -37,6 +37,7 @@ namespace FlinkNet.Annotations;
         | AttributeTargets.Method
         | AttributeTargets.Property
         | AttributeTargets.Field
-        | AttributeTargets.Constructor)]
+        | AttributeTargets.Constructor,
+    Inherited = false)]
 [Public]
 public sealed class PublicEvolvingAttribute : Attribute;

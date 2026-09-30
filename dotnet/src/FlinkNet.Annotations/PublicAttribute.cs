@@ -32,6 +32,7 @@ namespace FlinkNet.Annotations;
         | AttributeTargets.Interface
         | AttributeTargets.Enum
         | AttributeTargets.Struct
-        | AttributeTargets.Delegate)]
+        | AttributeTargets.Delegate,
+    Inherited = false)]
 [Public]
 public sealed class PublicAttribute : Attribute;
