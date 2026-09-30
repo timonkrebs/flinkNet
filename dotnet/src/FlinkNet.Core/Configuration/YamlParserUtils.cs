@@ -17,6 +17,7 @@
  */
 
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using FlinkNet.Util;
@@ -275,27 +276,31 @@ public static partial class YamlParserUtils
                 ? l is >= int.MinValue and <= int.MaxValue ? (object)(int)l : (object)l
                 : null;
         }
+        // hex and octal are unsigned magnitudes (SnakeYAML parses them as positive integers);
+        // .NET's hex parsing would reinterpret a set high bit as two's complement
         if (value.StartsWith("0x", StringComparison.Ordinal) && HexIntRegex().IsMatch(value))
         {
-            return long.TryParse(
-                value[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out long h)
-                ? h is >= int.MinValue and <= int.MaxValue ? (object)(int)h : (object)h
-                : null;
+            return NarrowUnsigned(BigInteger.Parse(
+                "0" + value[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture));
         }
         if (value.StartsWith("0o", StringComparison.Ordinal) && OctalIntRegex().IsMatch(value))
         {
-            try
+            BigInteger octal = BigInteger.Zero;
+            foreach (char digit in value.AsSpan(2))
             {
-                long o = Convert.ToInt64(value[2..], 8);
-                return o is >= int.MinValue and <= int.MaxValue ? (object)(int)o : (object)o;
+                octal = octal * 8 + (digit - '0');
             }
-            catch (OverflowException)
-            {
-                return null;
-            }
+            return NarrowUnsigned(octal);
         }
         return null;
     }
+
+    /// <summary>Narrows a non-negative integer to int or long; values beyond long stay strings,
+    /// like decimal integers beyond long.</summary>
+    private static object? NarrowUnsigned(BigInteger value) =>
+        value <= int.MaxValue ? (int)value
+            : value <= long.MaxValue ? (long)value
+            : null;
 
     private static object? ResolveFloat(string value)
     {

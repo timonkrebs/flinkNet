@@ -243,6 +243,24 @@ public class YamlParserUtilsTest : IDisposable
         Assert.Equal("a,b", YamlParserUtils.ToYamlString("a,b"));
     }
 
+    /// <summary>Hex and octal scalars are unsigned magnitudes, as in snakeyaml-engine (verified
+    /// on a JDK): a set 64th bit must not wrap to a negative long. Values beyond long stay
+    /// strings, like decimal integers beyond long.</summary>
+    [Fact]
+    public void TestLargeHexAndOctalIntegersAreUnsigned()
+    {
+        Assert.Equal(long.MaxValue, YamlParserUtils.ConvertToObject<object>("0x7fffffffffffffff"));
+        Assert.Equal(2147483648L, YamlParserUtils.ConvertToObject<object>("0x80000000"));
+        Assert.Equal(long.MaxValue, YamlParserUtils.ConvertToObject<object>("0o777777777777777777777"));
+        Assert.Equal(
+            "0xffffffffffffffff", YamlParserUtils.ConvertToObject<object>("0xffffffffffffffff"));
+        Assert.Equal(
+            "0x8000000000000000", YamlParserUtils.ConvertToObject<object>("0x8000000000000000"));
+        Assert.Equal(
+            "0o1777777777777777777777",
+            YamlParserUtils.ConvertToObject<object>("0o1777777777777777777777"));
+    }
+
     [Fact]
     public void TestConvertToObject()
     {
