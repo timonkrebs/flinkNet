@@ -257,4 +257,37 @@ public class DataInputOutputSerializationTest
                 bytes);
         }
     }
+
+    /// <summary>Like closing Java's DataInputStream/DataOutputStream, disposing a wrapper
+    /// disposes its stream (the output wrapper flushes first), unless created with leaveOpen.</summary>
+    [Fact]
+    public void TestStreamWrappersDisposeTheirStreams()
+    {
+        var inStream = new MemoryStream(new byte[4]);
+        using (new DataInputViewStreamWrapper(inStream))
+        {
+        }
+        Assert.False(inStream.CanRead);
+
+        var keptIn = new MemoryStream(new byte[4]);
+        using (new DataInputViewStreamWrapper(keptIn, leaveOpen: true))
+        {
+        }
+        Assert.True(keptIn.CanRead);
+
+        var outStream = new MemoryStream();
+        using (new DataOutputViewStreamWrapper(outStream))
+        {
+        }
+        Assert.False(outStream.CanWrite);
+
+        var target = new MemoryStream();
+        var buffered = new BufferedStream(target, 1024);
+        using (var output = new DataOutputViewStreamWrapper(buffered, leaveOpen: true))
+        {
+            output.WriteInt(42);
+        }
+        Assert.True(buffered.CanWrite);
+        Assert.Equal<byte[]>([0, 0, 0, 42], target.ToArray());
+    }
 }

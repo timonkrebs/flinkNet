@@ -23,19 +23,49 @@ namespace FlinkNet.Core.Memory;
 
 /// <summary>
 /// Utility class that turns a <see cref="Stream"/> into a <see cref="IDataOutputView"/>
-/// (the port of Java's <c>DataOutputStream</c>-based wrapper).
+/// (the port of Java's <c>DataOutputStream</c>-based wrapper). Disposing the wrapper flushes and
+/// disposes the underlying stream, like closing Java's <c>DataOutputStream</c>, unless it was
+/// created with <c>leaveOpen</c> (then it only flushes; the .NET writer convention).
 /// </summary>
 [PublicEvolving]
-public class DataOutputViewStreamWrapper : IDataOutputView
+public class DataOutputViewStreamWrapper : IDataOutputView, IDisposable
 {
     private readonly Stream _out;
 
+    private readonly bool _leaveOpen;
+
+    private bool _disposed;
+
     private byte[]? _tempBuffer;
 
-    public DataOutputViewStreamWrapper(Stream outStream)
+    public DataOutputViewStreamWrapper(Stream outStream, bool leaveOpen = false)
     {
         ArgumentNullException.ThrowIfNull(outStream);
         _out = outStream;
+        _leaveOpen = leaveOpen;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+        _disposed = true;
+        if (disposing)
+        {
+            _out.Flush();
+            if (!_leaveOpen)
+            {
+                _out.Dispose();
+            }
+        }
     }
 
     public void SkipBytesToWrite(int numBytes)

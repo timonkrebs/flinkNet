@@ -24,17 +24,43 @@ namespace FlinkNet.Core.Memory;
 
 /// <summary>
 /// Utility class that turns a <see cref="Stream"/> into a <see cref="IDataInputView"/>
-/// (the port of Java's <c>DataInputStream</c>-based wrapper).
+/// (the port of Java's <c>DataInputStream</c>-based wrapper). Disposing the wrapper disposes
+/// the underlying stream, like closing Java's <c>DataInputStream</c>, unless it was created with
+/// <c>leaveOpen</c> (the .NET reader convention).
 /// </summary>
 [PublicEvolving]
-public class DataInputViewStreamWrapper : IDataInputView
+public class DataInputViewStreamWrapper : IDataInputView, IDisposable
 {
     private readonly Stream _in;
 
-    public DataInputViewStreamWrapper(Stream inStream)
+    private readonly bool _leaveOpen;
+
+    private bool _disposed;
+
+    public DataInputViewStreamWrapper(Stream inStream, bool leaveOpen = false)
     {
         ArgumentNullException.ThrowIfNull(inStream);
         _in = inStream;
+        _leaveOpen = leaveOpen;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+        _disposed = true;
+        if (disposing && !_leaveOpen)
+        {
+            _in.Dispose();
+        }
     }
 
     public void SkipBytesToRead(int numBytes)
