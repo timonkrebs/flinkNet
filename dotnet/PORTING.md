@@ -196,6 +196,8 @@ has a native C# equivalent:
      wire-compatible with Java. Nulls that a non-nullable value type
      cannot hold (Java `Integer` values/elements read as `int`) are
      rejected on read; use the nullable form (`int?`) for such data.
+     Null map keys (allowed by Java's `HashMap`) are rejected on read,
+     since .NET dictionaries cannot hold them.
    - ✅ type information: `TypeInformation<T>` abstract base (with a
      minimal `ISerializerConfig` placeholder), `BasicTypeInfo` for the
      nine basic types incl. Java's auto-cast tables, and

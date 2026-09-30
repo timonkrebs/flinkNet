@@ -31,7 +31,9 @@ namespace FlinkNet.Api.Common.TypeUtils.Base;
 ///
 /// <para>PORT NOTE: a non-nullable value type (e.g. <c>int</c> where Java has <c>Integer</c>)
 /// cannot hold a null value, so reading one fails instead of fabricating
-/// <c>default(TValue)</c>. Use a nullable value type (<c>int?</c>) for such data.</para>
+/// <c>default(TValue)</c>. Use a nullable value type (<c>int?</c>) for such data. Java's
+/// <c>HashMap</c> also allows one null key (when the key serializer supports null, e.g. for
+/// strings), which .NET dictionaries cannot hold; reading one fails with a clear error.</para>
 /// </summary>
 /// <typeparam name="TKey">The type of the keys in the map.</typeparam>
 /// <typeparam name="TValue">The type of the values in the map.</typeparam>
@@ -139,6 +141,12 @@ public sealed class MapSerializer<TKey, TValue> : TypeSerializer<IDictionary<TKe
         for (int i = 0; i < size; ++i)
         {
             TKey key = _keySerializer.Deserialize(source);
+            if (key is null)
+            {
+                throw new IOException(
+                    "The serialized map contains a null key, which .NET dictionaries cannot "
+                        + "hold (Java's HashMap allows one).");
+            }
 
             bool isNull = source.ReadBoolean();
             if (isNull && !ValueCanBeNull)

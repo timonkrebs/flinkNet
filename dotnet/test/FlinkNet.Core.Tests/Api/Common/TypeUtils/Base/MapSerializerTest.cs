@@ -91,4 +91,22 @@ public class MapSerializerTest : SerializerTestBase<IDictionary<long, string>>
         Assert.Throws<IOException>(
             () => serializer.Deserialize(new DataInputDeserializer(output.GetCopyOfBuffer())));
     }
+
+    /// <summary>A null key (valid in a Java HashMap with a null-capable key serializer) cannot be
+    /// held by a .NET dictionary and must be rejected with a clear error.</summary>
+    [Fact]
+    public void TestNullKeyIsRejected()
+    {
+        var output = new DataOutputSerializer(32);
+        output.WriteInt(1);
+        StringSerializer.Instance.Serialize(null!, output); // null key
+        output.WriteBoolean(false);
+        StringSerializer.Instance.Serialize("v", output);
+
+        var serializer =
+            new MapSerializer<string, string>(StringSerializer.Instance, StringSerializer.Instance);
+        IOException e = Assert.Throws<IOException>(
+            () => serializer.Deserialize(new DataInputDeserializer(output.GetCopyOfBuffer())));
+        Assert.Contains("null key", e.Message);
+    }
 }
