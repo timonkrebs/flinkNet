@@ -239,8 +239,9 @@ internal static class ConfigOptionShared
         DescriptionDoc.Builder().Text("").Build();
 
     /// <summary>
-    /// Structural equality for boxed default values. List-typed defaults compare element-wise
-    /// (Java's <c>List.equals</c> semantics, which .NET lists do not have).
+    /// Structural equality for boxed default values, with Java's <c>List.equals</c> and
+    /// order-independent <c>Map.equals</c> semantics (recursively, e.g. for lists of maps),
+    /// which .NET collections do not have.
     /// </summary>
     internal static bool DefaultValuesEqual(object? left, object? right)
     {
@@ -248,28 +249,11 @@ internal static class ConfigOptionShared
         {
             return left is null && right is null;
         }
-        if (left is not string
-            && left is System.Collections.IEnumerable leftSeq
-            && right is System.Collections.IEnumerable rightSeq)
-        {
-            return leftSeq.Cast<object?>().SequenceEqual(rightSeq.Cast<object?>());
-        }
-        return left.Equals(right);
+        return ConfigurationUtils.ValueEquals(left, right);
     }
 
-    internal static int DefaultValueHashCode(object? defaultValue)
-    {
-        if (defaultValue is null)
-        {
-            return 0;
-        }
-        if (defaultValue is not string && defaultValue is System.Collections.IEnumerable seq)
-        {
-            return seq.Cast<object?>()
-                .Aggregate(1, (hash, element) => 31 * hash + (element?.GetHashCode() ?? 0));
-        }
-        return defaultValue.GetHashCode();
-    }
+    internal static int DefaultValueHashCode(object? defaultValue) =>
+        ConfigurationUtils.ValueHashCode(defaultValue);
 
     /// <summary>Renders a boxed default for ToString, mirroring Java's implicit conversions.</summary>
     internal static string DefaultValueToString(object? defaultValue)

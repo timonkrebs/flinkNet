@@ -537,4 +537,91 @@ public static class ConfigurationUtils
 
     public static ConfigOption<long> GetLongConfigOption(string key) =>
         ConfigOptions.Key(key).LongType().NoDefaultValue();
+
+    /// <summary>
+    /// Compares two stored raw values the way Java's <c>Object.equals</c> does: structurally.
+    /// Java's List/Map values compare element-wise, while .NET collections compare by
+    /// reference, so lists and maps are matched entry by entry here.
+    /// </summary>
+    internal static bool ValueEquals(object thisVal, object otherVal)
+    {
+        if (thisVal is byte[] thisBytes)
+        {
+            return otherVal is byte[] otherBytes && thisBytes.SequenceEqual(otherBytes);
+        }
+        if (thisVal is System.Collections.IDictionary thisMap)
+        {
+            if (otherVal is not System.Collections.IDictionary otherMap
+                || thisMap.Count != otherMap.Count)
+            {
+                return false;
+            }
+            foreach (System.Collections.DictionaryEntry entry in thisMap)
+            {
+                object? otherEntry = otherMap.Contains(entry.Key) ? otherMap[entry.Key] : null;
+                if (entry.Value == null || otherEntry == null
+                    ? !Equals(entry.Value, otherEntry)
+                    : !ValueEquals(entry.Value, otherEntry))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (thisVal is System.Collections.IList thisList)
+        {
+            if (otherVal is not System.Collections.IList otherList
+                || thisList.Count != otherList.Count)
+            {
+                return false;
+            }
+            for (int i = 0; i < thisList.Count; i++)
+            {
+                object? thisItem = thisList[i];
+                object? otherItem = otherList[i];
+                if (thisItem == null || otherItem == null
+                    ? !Equals(thisItem, otherItem)
+                    : !ValueEquals(thisItem, otherItem))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return thisVal.Equals(otherVal);
+    }
+
+    /// <summary>
+    /// A hash code consistent with <see cref="ValueEquals"/>, following Java's
+    /// <c>List.hashCode</c> (31 * h + e) and order-independent <c>Map.hashCode</c> (sum of
+    /// key-hash XOR value-hash) for .NET collections, which hash by reference.
+    /// </summary>
+    internal static int ValueHashCode(object? value)
+    {
+        switch (value)
+        {
+            case null:
+                return 0;
+            case byte[] bytes:
+                var content = new HashCode();
+                content.AddBytes(bytes);
+                return content.ToHashCode();
+            case System.Collections.IDictionary map:
+                int mapHash = 0;
+                foreach (System.Collections.DictionaryEntry entry in map)
+                {
+                    mapHash += ValueHashCode(entry.Key) ^ ValueHashCode(entry.Value);
+                }
+                return mapHash;
+            case System.Collections.IList list:
+                int listHash = 1;
+                foreach (object? element in list)
+                {
+                    listHash = 31 * listHash + ValueHashCode(element);
+                }
+                return listHash;
+            default:
+                return value.GetHashCode();
+        }
+    }
 }

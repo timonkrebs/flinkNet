@@ -659,4 +659,30 @@ public class ConfigurationTest
         Assert.Contains("[a, b]", rendered);
         Assert.DoesNotContain("System.Collections", rendered);
     }
+
+    /// <summary>Like Java's Map.equals/List.equals, option defaults compare structurally:
+    /// maps independent of insertion order, lists of maps element-wise.</summary>
+    [Fact]
+    public void TestOptionDefaultsCompareStructurally()
+    {
+        ConfigOption<IDictionary<string, string>> first = ConfigOptions.Key("weights").MapType()
+            .DefaultValue(new Dictionary<string, string> { { "a", "1" }, { "b", "2" } });
+        ConfigOption<IDictionary<string, string>> second = ConfigOptions.Key("weights").MapType()
+            .DefaultValue(new Dictionary<string, string> { { "b", "2" }, { "a", "1" } });
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+
+        ConfigOption<IList<IDictionary<string, string>>> firstList = ConfigOptions.Key("maps")
+            .MapType().AsList()
+            .DefaultValues(new Dictionary<string, string> { { "k", "v" } });
+        ConfigOption<IList<IDictionary<string, string>>> secondList = ConfigOptions.Key("maps")
+            .MapType().AsList()
+            .DefaultValues(new Dictionary<string, string> { { "k", "v" } });
+        Assert.Equal(firstList, secondList);
+        Assert.Equal(firstList.GetHashCode(), secondList.GetHashCode());
+
+        ConfigOption<IDictionary<string, string>> other = ConfigOptions.Key("weights").MapType()
+            .DefaultValue(new Dictionary<string, string> { { "a", "1" }, { "b", "3" } });
+        Assert.NotEqual(first, other);
+    }
 }
