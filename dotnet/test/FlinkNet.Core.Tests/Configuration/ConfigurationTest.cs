@@ -636,4 +636,27 @@ public class ConfigurationTest
         Value1,
         Value2,
     }
+
+    /// <summary>Like Java's String.split (outcomes verified on a JDK), trailing empty entries are
+    /// dropped and interior ones kept.</summary>
+    [Fact]
+    public void TestSplitPathsDropsTrailingEmptyEntries()
+    {
+        Assert.Equal(new[] { "/tmp" }, SplitPaths("/tmp,"));
+        Assert.Equal(new[] { "/a", "", "/b" }, SplitPaths("/a,,/b"));
+        Assert.Empty(SplitPaths(","));
+        Assert.Empty(SplitPaths(""));
+    }
+
+    /// <summary>Structured values render structurally, not as CLR type names.</summary>
+    [Fact]
+    public void TestToStringRendersStructuredValues()
+    {
+        var cfg = new FlinkNet.Configuration.Configuration();
+        cfg.Set(ListStringOption, new List<string> { "a", "b" });
+
+        string rendered = cfg.ToString();
+        Assert.Contains("[a, b]", rendered);
+        Assert.DoesNotContain("System.Collections", rendered);
+    }
 }

@@ -110,9 +110,20 @@ public static class ConfigurationUtils
     public static string[] SplitPaths(string separatedPaths)
     {
         ArgumentNullException.ThrowIfNull(separatedPaths);
-        return separatedPaths.Length > 0
-            ? separatedPaths.Split(',', Path.PathSeparator)
-            : Empty;
+        if (separatedPaths.Length == 0)
+        {
+            return Empty;
+        }
+
+        // Java's String.split discards trailing empty entries (keeping interior ones), so a
+        // trailing separator does not add an empty "current directory" entry
+        string[] parts = separatedPaths.Split(',', Path.PathSeparator);
+        int count = parts.Length;
+        while (count > 0 && parts[count - 1].Length == 0)
+        {
+            count--;
+        }
+        return count == parts.Length ? parts : parts[..count];
     }
 
     /// <summary>

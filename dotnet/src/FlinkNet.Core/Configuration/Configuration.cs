@@ -734,7 +734,9 @@ public class Configuration : IReadableConfig, IWritableConfig, Core.Io.IIOReadab
     {
         IDictionary<string, string> hidden =
             ConfigurationUtils.HideSensitiveValues(
-                ConfData.ToDictionary(e => e.Key, e => e.Value.ToString() ?? ""),
+                // PORT NOTE: Java renders values with toString(); .NET collections print their
+                // type name, so values use the port's canonical string form (as in ToMap)
+                ConfData.ToDictionary(e => e.Key, e => ConfigurationUtils.ConvertToString(e.Value)),
                 Get(SecurityOptions.AdditionalSensitiveKeys) ?? []);
         // Java prints the java.util.Map toString format
         return "{" + string.Join(", ", hidden.Select(e => $"{e.Key}={e.Value}")) + "}";
