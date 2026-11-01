@@ -111,6 +111,14 @@ public static class MemorySegmentFactory
     /// <param name="size">The size of the off-heap memory segment to allocate.</param>
     /// <param name="owner">The owner to associate with the off-heap memory segment.</param>
     /// <returns>A new memory segment, backed by unpooled off-heap memory.</returns>
+    /// <remarks>
+    /// PORT NOTE: the native memory is released only by <see cref="MemorySegment.Free"/>; the
+    /// caller owns that duty (as the memory manager will, once ported). Java additionally frees
+    /// abandoned direct memory when the garbage collector reclaims its buffer. The port has no
+    /// such fallback on purpose: a <see cref="Span{T}"/> over native memory does not keep its
+    /// segment reachable, so a finalizer could free memory that code is still reading or
+    /// writing through a span, turning a leak into memory corruption.
+    /// </remarks>
     public static unsafe MemorySegment AllocateUnpooledOffHeapMemory(int size, object? owner)
     {
         byte* address = (byte*)NativeMemory.AllocZeroed((nuint)size);
