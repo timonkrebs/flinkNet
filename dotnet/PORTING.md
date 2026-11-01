@@ -134,7 +134,12 @@ has a native C# equivalent:
    `sbyte`, not the unsigned CLR `byte`, so values, ordering and arithmetic
    match Flink; raw binary data (buffers, `byte[]` payloads) stays `byte`.
 10. **`equals`/`hashCode`/`toString`** become `Equals`/`GetHashCode`/`ToString`
-    overrides with the same semantics.
+    overrides with the same semantics. Where Flink depends on the exact hash
+    or order of a JDK type (key partitioning, sorting), use
+    `Util.JavaPrimitives` rather than the .NET built-ins: .NET string hashes
+    are randomized per process, `string.CompareTo` is culture-sensitive,
+    several primitive hashes differ, and `double.CompareTo` orders NaN and
+    -0.0 differently from `Double.compare`.
 11. **Locale-sensitive formatting** (`String.format(Locale.ROOT, …)`) uses
     `CultureInfo.InvariantCulture`.
 12. **Generated code stays generated**: the tuple classes are produced by
@@ -205,7 +210,8 @@ has a native C# equivalent:
      nine basic types incl. Java's auto-cast tables, and
      `TupleSerializer<T>` (merged TupleSerializerBase/TupleSerializer;
      Java's erased `TypeSerializer<Object>[]` becomes reflective
-     object-boxing adapters). Deferred: comparators, TypeExtractor,
+     object-boxing adapters). Deferred: `AtomicType`/
+     `createComparator` (waits for `ExecutionConfig`), TypeExtractor,
      `TupleTypeInfo`, Date/BigInteger/... infos.
    - ✅ core.fs foundation: `Path` (URI semantics incl. Windows
      drives, normalization and dot-segment handling as in
@@ -256,6 +262,17 @@ has a native C# equivalent:
      (component class persisted in the outer snapshot for format
      parity and validated against `typeof(C)` on read; the ctor drops
      Java's erasure-artifact `Class` param).
+   - ✅ basic type comparators: `TypeComparator<T>` (non-generic base
+     for Java's raw flat-comparator arrays, with `UntypedCompare` for
+     extracted keys), `BasicTypeComparator<T>`, `NormalizedKeyUtil`, and
+     the nine comparators (bool/byte/short/char/int/long/float/double/
+     string). Hashes, orders and normalized-key bytes match Java
+     (`Util.JavaPrimitives`: Java's `hashCode`, `Float/Double.compare`,
+     canonical NaN bits; ordinal string order); the float/double
+     serialized comparison keeps Java's IEEE-operator semantics.
+     Deferred: the `AtomicType` wiring on `BasicTypeInfo` (needs
+     `ExecutionConfig`), Value/Date/BigInteger/... comparators, and
+     composite (tuple/array) comparators.
    - 🟨 Value types: the `IValue`/`ICopyableValue`/`IResettableValue`/
      `INormalizableKey` interfaces and the primitive values
      `IntValue`, `LongValue`, `BooleanValue`, `NullValue` (incl.

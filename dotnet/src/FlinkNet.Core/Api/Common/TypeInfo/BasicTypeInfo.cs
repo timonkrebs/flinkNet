@@ -26,7 +26,9 @@ namespace FlinkNet.Api.Common.TypeInfo;
 /// <summary>
 /// Type information for primitive types (int, long, double, byte, ...), and string.
 ///
-/// <para>PORT NOTE: comparator classes are deferred to the sort/join runtime increment, and the
+/// <para>PORT NOTE: Java's <c>AtomicType.createComparator</c> takes an <c>ExecutionConfig</c>
+/// and follows with it; the comparators themselves exist (e.g.
+/// <see cref="IntComparator"/>). The
 /// <c>IntegerTypeInfo</c>/<c>FractionalTypeInfo</c> intermediate classes are flattened into
 /// <see cref="BasicTypeInfo{T}"/>. Date/Void/BigInteger/BigDecimal/Instant infos follow with
 /// their serializers.</para>
