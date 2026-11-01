@@ -108,9 +108,10 @@ public static class BasicTypeInfo
     public static readonly BasicTypeInfo<bool> BooleanTypeInfo =
         new(typeof(bool), [], BooleanSerializer.Instance);
 
-    public static readonly BasicTypeInfo<byte> ByteTypeInfo =
+    // Java's signed byte maps to sbyte (see the PORT NOTE on ByteSerializer)
+    public static readonly BasicTypeInfo<sbyte> ByteTypeInfo =
         new(
-            typeof(byte),
+            typeof(sbyte),
             [typeof(short), typeof(int), typeof(long), typeof(float), typeof(double), typeof(char)],
             ByteSerializer.Instance);
 
@@ -145,7 +146,7 @@ public static class BasicTypeInfo
         {
             { typeof(string), StringTypeInfo },
             { typeof(bool), BooleanTypeInfo },
-            { typeof(byte), ByteTypeInfo },
+            { typeof(sbyte), ByteTypeInfo },
             { typeof(short), ShortTypeInfo },
             { typeof(int), IntTypeInfo },
             { typeof(long), LongTypeInfo },

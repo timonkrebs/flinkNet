@@ -21,41 +21,47 @@ using FlinkNet.Core.Memory;
 
 namespace FlinkNet.Api.Common.TypeUtils.Base;
 
-/// <summary>Type serializer for <see cref="byte"/>.</summary>
+/// <summary>
+/// Type serializer for Java's <c>byte</c>/<c>Byte</c>, which is signed.
+///
+/// <para>PORT NOTE: Java's byte maps to <see cref="sbyte"/> (-128..127), not the unsigned CLR
+/// <see cref="byte"/>, so values, ordering and arithmetic keep Flink's semantics (Java's -1 is
+/// -1, not 255). The wire byte is unchanged; raw binary data stays <c>byte[]</c>.</para>
+/// </summary>
 [Internal]
-public sealed class ByteSerializer : TypeSerializerSingleton<byte>
+public sealed class ByteSerializer : TypeSerializerSingleton<sbyte>
 {
     /// <summary>Sharable instance of the ByteSerializer.</summary>
     public static readonly ByteSerializer Instance = new();
 
     public override bool IsImmutableType => true;
 
-    public override byte CreateInstance() => 0;
+    public override sbyte CreateInstance() => 0;
 
-    public override byte Copy(byte from) => from;
+    public override sbyte Copy(sbyte from) => from;
 
-    public override byte Copy(byte from, byte reuse) => from;
+    public override sbyte Copy(sbyte from, sbyte reuse) => from;
 
     public override int Length => 1;
 
-    public override void Serialize(byte record, IDataOutputView target) =>
+    public override void Serialize(sbyte record, IDataOutputView target) =>
         target.WriteByte(record);
 
-    public override byte Deserialize(IDataInputView source) => source.ReadByte();
+    public override sbyte Deserialize(IDataInputView source) => unchecked((sbyte)source.ReadByte());
 
-    public override byte Deserialize(byte reuse, IDataInputView source) =>
+    public override sbyte Deserialize(sbyte reuse, IDataInputView source) =>
         Deserialize(source);
 
     public override void Copy(IDataInputView source, IDataOutputView target) =>
         target.WriteByte(source.ReadByte());
 
-    public override TypeSerializerSnapshot<byte> SnapshotConfiguration() =>
+    public override TypeSerializerSnapshot<sbyte> SnapshotConfiguration() =>
         new ByteSerializerSnapshot();
 
     // ------------------------------------------------------------------------
 
     /// <summary>Serializer configuration snapshot for compatibility and format evolution.</summary>
-    public sealed class ByteSerializerSnapshot : SimpleTypeSerializerSnapshot<byte>
+    public sealed class ByteSerializerSnapshot : SimpleTypeSerializerSnapshot<sbyte>
     {
         public ByteSerializerSnapshot()
             : base(() => Instance)

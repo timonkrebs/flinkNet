@@ -18,23 +18,38 @@
 
 using FlinkNet.Api.Common.TypeUtils;
 using FlinkNet.Api.Common.TypeUtils.Base;
+using FlinkNet.Core.Memory;
+using Xunit;
 
 namespace FlinkNet.Tests.Api.Common.TypeUtils.Base;
 
 /// <summary>A test for the <see cref="ByteSerializer"/>.</summary>
-public class ByteSerializerTest : SerializerTestBase<byte>
+public class ByteSerializerTest : SerializerTestBase<sbyte>
 {
-    protected override TypeSerializer<byte> CreateSerializer() => ByteSerializer.Instance;
+    protected override TypeSerializer<sbyte> CreateSerializer() => ByteSerializer.Instance;
 
     protected override int ExpectedLength => 1;
 
-    protected override byte[] GetTestData() =>
+    protected override sbyte[] GetTestData() =>
     [
         0,
         1,
-        0x7f,
-        0x80,
-        0xFF,
+        sbyte.MaxValue,
+        sbyte.MinValue,
+        -1,
         42,
     ];
+
+    /// <summary>Java's byte is signed: the wire byte 0xff is -1, not 255.</summary>
+    [Fact]
+    public void TestSignedJavaByteDomain()
+    {
+        var input = new DataInputDeserializer([0xff, 0x80]);
+        Assert.Equal(-1, ByteSerializer.Instance.Deserialize(input));
+        Assert.Equal(sbyte.MinValue, ByteSerializer.Instance.Deserialize(input));
+
+        var output = new DataOutputSerializer(2);
+        ByteSerializer.Instance.Serialize(-1, output);
+        Assert.Equal<byte[]>([0xff], output.GetCopyOfBuffer());
+    }
 }

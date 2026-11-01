@@ -130,7 +130,9 @@ has a native C# equivalent:
    in .NET. Where the Java code relies on null boxed values, use the nullable
    form (`int?`). A non-nullable value type cannot hold null, so the port
    rejects a null read from a stream or assigned to a field with a clear error
-   instead of fabricating `default(T)`.
+   instead of fabricating `default(T)`. Java's signed `byte`/`Byte` maps to
+   `sbyte`, not the unsigned CLR `byte`, so values, ordering and arithmetic
+   match Flink; raw binary data (buffers, `byte[]` payloads) stays `byte`.
 10. **`equals`/`hashCode`/`toString`** become `Equals`/`GetHashCode`/`ToString`
     overrides with the same semantics.
 11. **Locale-sensitive formatting** (`String.format(Locale.ROOT, …)`) uses

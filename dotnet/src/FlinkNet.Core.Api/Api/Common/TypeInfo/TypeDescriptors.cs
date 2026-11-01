@@ -61,7 +61,8 @@ public static class TypeDescriptors
     public static readonly ITypeDescriptor<int> INT = new BasicTypeDescriptorImpl<int>();
     public static readonly ITypeDescriptor<bool> BOOLEAN = new BasicTypeDescriptorImpl<bool>();
     public static readonly ITypeDescriptor<long> LONG = new BasicTypeDescriptorImpl<long>();
-    public static readonly ITypeDescriptor<byte> BYTE = new BasicTypeDescriptorImpl<byte>();
+    // Java's signed byte maps to sbyte, not the unsigned CLR byte
+    public static readonly ITypeDescriptor<sbyte> BYTE = new BasicTypeDescriptorImpl<sbyte>();
     public static readonly ITypeDescriptor<short> SHORT = new BasicTypeDescriptorImpl<short>();
     public static readonly ITypeDescriptor<double> DOUBLE = new BasicTypeDescriptorImpl<double>();
     public static readonly ITypeDescriptor<float> FLOAT = new BasicTypeDescriptorImpl<float>();
