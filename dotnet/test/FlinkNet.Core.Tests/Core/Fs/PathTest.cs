@@ -269,6 +269,20 @@ public class PathTest
         return Path.DeserializeFromDataInputView(new DataInputDeserializer(output.GetCopyOfBuffer()));
     }
 
+    /// <summary>On Unix a backslash is an ordinary file-name character, which Java's
+    /// <c>File.toURI().getPath()</c> keeps (verified on a JDK); only Windows maps it to the
+    /// separator.</summary>
+    [Fact]
+    public void TestFromLocalFileKeepsBackslashesOnUnix()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Equal("/C:/tmp/a/b", Path.FromLocalFile(new FileInfo(@"C:\tmp\a\b")).GetPath());
+            return;
+        }
+        Assert.Equal(@"/tmp/a\b", Path.FromLocalFile(new FileInfo(@"/tmp/a\b")).GetPath());
+    }
+
     /// <summary>FromLocalFile yields a file URI with an absolute path, like Java's
     /// <c>new Path(file.toURI())</c>.</summary>
     [Fact]
@@ -335,7 +349,11 @@ public class PathTest
     [Fact]
     public void TestUriComponentsAreTakenAsGiven()
     {
-        Assert.Equal("//server/share/data", Path.AbsoluteUriPath(@"\\server\share\data"));
+        if (OperatingSystem.IsWindows())
+        {
+            // a UNC path; on Unix the backslashes would be file-name characters
+            Assert.Equal("//server/share/data", Path.AbsoluteUriPath(@"\\server\share\data"));
+        }
 
         var unc = new Path(new PathUri("file", null, "//server/share/data"));
         Assert.Null(unc.ToUri().Authority);

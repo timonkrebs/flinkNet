@@ -546,7 +546,11 @@ public class Path : IComparable<Path>
     /// does: forward slashes with a leading slash ("/C:/tmp/x" on Windows).</summary>
     internal static string AbsoluteUriPath(string localPath)
     {
-        string path = localPath.Replace('\\', '/');
+        // only where the backslash is a directory separator (Windows); on Unix it is an
+        // ordinary file-name character, which Java's File.toURI() keeps as well
+        string path = System.IO.Path.DirectorySeparatorChar == '\\'
+            ? localPath.Replace('\\', '/')
+            : localPath;
         return path.StartsWith('/') ? path : "/" + path;
     }
 
