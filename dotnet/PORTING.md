@@ -274,12 +274,16 @@ has a native C# equivalent:
      `ExecutionConfig`), Value/Date/BigInteger/... comparators, and
      composite (tuple/array) comparators.
    - 🟨 Value types: the `IValue`/`ICopyableValue`/`IResettableValue`/
-     `INormalizableKey` interfaces and the primitive values
-     `IntValue`, `LongValue`, `BooleanValue`, `NullValue` (incl.
-     normalized-key writing on MemorySegment). Deferred: the full
+     `INormalizableKey` interfaces and all primitive values
+     (`BooleanValue`, `ByteValue` over `sbyte`, `CharValue`,
+     `ShortValue`, `IntValue`, `LongValue`, `FloatValue`,
+     `DoubleValue`, `NullValue`), incl. normalized-key writing on
+     MemorySegment. Float/Double values keep Java's split semantics
+     (IEEE `CompareTo`, bit-based `Equals`/hash) and print like
+     `Double.toString` (`JavaPrimitives.ToString`). Deferred: the full
      mutable `StringValue` class (the static varint string I/O is
-     ported), Byte/Char/Short/Float/Double values, `ListValue`/
-     `MapValue`, `Record`, the value serializers and comparators.
+     ported), `ListValue`/`MapValue`, `Record`, the value serializers
+     and comparators.
    - ⬜ next slices: option catalogs (`CoreOptions`,
      `TaskManagerOptions`, ...) as their subsystems are ported,
      `DescribedEnum` and `ConfigUtils.getAllConfigOptions` (both need a

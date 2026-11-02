@@ -96,6 +96,74 @@ public class ValueTypesTest
         Assert.Equal<byte[]>([0], output.GetCopyOfBuffer());
     }
 
+    /// <summary>Java's byte is signed: ByteValue holds an sbyte, writes one byte and reads
+    /// 0xff back as -1.</summary>
+    [Fact]
+    public void TestByteValue()
+    {
+        var value = new ByteValue(-5);
+        Assert.Equal(value, WriteAndRead(value));
+        Assert.Equal("-5", value.ToString());
+        Assert.Equal(-5, value.GetHashCode());
+        Assert.Equal(1, value.BinaryLength);
+        Assert.True(new ByteValue(-1).CompareTo(new ByteValue(1)) < 0);
+
+        var input = new DataInputDeserializer([0xff]);
+        var read = new ByteValue();
+        read.Read(input);
+        Assert.Equal(-1, read.GetValue());
+    }
+
+    [Fact]
+    public void TestShortAndCharValues()
+    {
+        var shortValue = new ShortValue(-1368);
+        Assert.Equal(shortValue, WriteAndRead(shortValue));
+        Assert.Equal("-1368", shortValue.ToString());
+        Assert.Equal(-1368, shortValue.GetHashCode());
+        Assert.Equal(2, shortValue.BinaryLength);
+
+        var charValue = new CharValue('\u9a5f');
+        Assert.Equal(charValue, WriteAndRead(charValue));
+        Assert.Equal("\u9a5f", charValue.ToString());
+        Assert.Equal(0x9a5f, charValue.GetHashCode());
+        Assert.True(new CharValue('a').CompareTo(new CharValue('\uffff')) < 0);
+    }
+
+    /// <summary>As in Java: CompareTo uses the IEEE operators, Equals and GetHashCode the
+    /// canonical bits, and ToString prints like Double/Float.toString. (Equals is called
+    /// directly: xUnit's equality assertions prefer IComparable.)</summary>
+    [Fact]
+    public void TestFloatingPointValues()
+    {
+        var doubleValue = new DoubleValue(1.5);
+        Assert.Equal(doubleValue, WriteAndRead(doubleValue));
+        Assert.Equal(8, doubleValue.BinaryLength);
+        // Java: 31 + (int) (bits ^ bits >>> 32)
+        Assert.Equal(31 + 1073217536, doubleValue.GetHashCode());
+        Assert.Equal("1.0", new DoubleValue(1.0).ToString());
+        Assert.Equal("1.0E10", new DoubleValue(1e10).ToString());
+        Assert.Equal("NaN", new DoubleValue(double.NaN).ToString());
+
+        Assert.Equal(0, new DoubleValue(-0.0).CompareTo(new DoubleValue(0.0)));
+        Assert.False(new DoubleValue(-0.0).Equals(new DoubleValue(0.0)));
+        Assert.Equal(0, new DoubleValue(double.NaN).CompareTo(new DoubleValue(1.0)));
+        Assert.True(new DoubleValue(double.NaN).Equals(new DoubleValue(double.NaN)));
+        Assert.Equal(
+            new DoubleValue(double.NaN).GetHashCode(),
+            new DoubleValue(BitConverter.Int64BitsToDouble(unchecked((long)0xfff8000000000001UL))).GetHashCode());
+
+        var floatValue = new FloatValue(1.5f);
+        Assert.Equal(floatValue, WriteAndRead(floatValue));
+        Assert.Equal(4, floatValue.BinaryLength);
+        Assert.Equal(1069547520, floatValue.GetHashCode());
+        Assert.Equal("3.0775607", new FloatValue(3.0775607f).ToString());
+        Assert.Equal("1.0E-4", new FloatValue(1e-4f).ToString());
+        Assert.Equal(0, new FloatValue(-0.0f).CompareTo(new FloatValue(0.0f)));
+        Assert.False(new FloatValue(-0.0f).Equals(new FloatValue(0.0f)));
+        Assert.True(new FloatValue(float.NaN).Equals(new FloatValue(float.NaN)));
+    }
+
     /// <summary>Byte-wise unsigned comparison of full normalized keys must order like
     /// CompareTo, including across the sign boundary.</summary>
     [Fact]
