@@ -518,6 +518,9 @@ public class Path : IComparable<Path>
         return new Path(scheme + ":" + "//" + authority + pathUri.UriPath);
     }
 
+    /// <summary>Checks if the path contains a windows drive letter (e.g. <c>/C:/foo</c>).</summary>
+    public bool HasWindowsDrive() => HasWindowsDrive(_path, slashed: true);
+
     /// <summary>Does the path have a windows drive letter, e.g. /C:/foo (slashed) or C:/foo.</summary>
     private static bool HasWindowsDrive(string path, bool slashed)
     {

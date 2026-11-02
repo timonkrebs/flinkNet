@@ -271,10 +271,12 @@ public class LocalFileSystem : FileSystem
     /// <summary>Converts the given Flink path to a local file system path.</summary>
     internal static string PathToFilePath(Path path)
     {
-        string uriPath = path.IsAbsolute() ? path.GetPath() : new Path(
-            SharedInstance.GetWorkingDirectory(), path).GetPath();
-        // strip the leading slash of Windows drive paths ("/C:/...")
-        if (uriPath.Length >= 3 && uriPath[0] == '/' && uriPath[2] == ':')
+        Path absolute = path.IsAbsolute() ? path : new Path(SharedInstance.GetWorkingDirectory(), path);
+        string uriPath = absolute.GetPath();
+        // PORT NOTE: Java hands the path to java.io.File unchanged, which accepts "/C:/..." on
+        // Windows; .NET needs the leading slash of a drive path stripped there. On other
+        // platforms "/a:/data" is an ordinary absolute path and must stay as it is.
+        if (OperatingSystem.IsWindows() && absolute.HasWindowsDrive())
         {
             uriPath = uriPath[1..];
         }

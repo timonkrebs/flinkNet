@@ -304,4 +304,22 @@ public class LocalFileSystemTest : IDisposable
         Assert.True(lfs.Rename(file, renamedFile));
         Assert.Equal("content", File.ReadAllText(renamedFile.GetPath()));
     }
+
+    /// <summary>Java's <c>pathToFile</c> hands the path to <c>File</c> unchanged, so on Unix
+    /// <c>/a:/data</c> is the absolute directory "a:" below the root. Only Windows needs the
+    /// leading slash of a drive path ("/C:/data") stripped.</summary>
+    [Fact]
+    public void TestPathToFilePathStripsDriveSlashOnlyOnWindows()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Equal("C:/data", LocalFileSystem.PathToFilePath(new Path("/C:/data")));
+        }
+        else
+        {
+            Assert.Equal("/a:/data", LocalFileSystem.PathToFilePath(new Path("/a:/data")));
+            Assert.Equal("/C:/data", LocalFileSystem.PathToFilePath(new Path("/C:/data")));
+        }
+        Assert.Equal("/1:/data", LocalFileSystem.PathToFilePath(new Path("/1:/data")));
+    }
 }
