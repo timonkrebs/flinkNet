@@ -18,6 +18,7 @@
 
 using System.Buffers.Binary;
 using FlinkNet.Annotations;
+using FlinkNet.Util;
 
 namespace FlinkNet.Core.Memory;
 
@@ -126,11 +127,9 @@ public class DataOutputViewStreamWrapper : IDataOutputView, IDisposable
     }
 
     // canonical NaN bits, like Java's DataOutputStream (see DataOutputSerializer)
-    public void WriteFloat(float v) =>
-        WriteInt(float.IsNaN(v) ? 0x7fc00000 : BitConverter.SingleToInt32Bits(v));
+    public void WriteFloat(float v) => WriteInt(JavaPrimitives.FloatToIntBits(v));
 
-    public void WriteDouble(double v) =>
-        WriteLong(double.IsNaN(v) ? 0x7ff8000000000000L : BitConverter.DoubleToInt64Bits(v));
+    public void WriteDouble(double v) => WriteLong(JavaPrimitives.DoubleToLongBits(v));
 
     public void WriteBytes(string s)
     {
