@@ -222,6 +222,29 @@ public class PathTest
         }
     }
 
+    /// <summary>
+    /// The current directory normalizes to an empty path, which Java's <c>URI.resolve</c> keeps
+    /// distinct from "/": a relative child stays relative (also through <c>Suffix</c>, which
+    /// resolves against the parent), while an empty path under an authority resolves to an
+    /// absolute one (outcomes verified with java.net.URI on a JDK).
+    /// </summary>
+    [Fact]
+    public void TestResolveAgainstEmptyParentPath()
+    {
+        var child = new Path(".", "out");
+        Assert.Equal("out", child.GetPath());
+        Assert.False(child.IsAbsolute());
+        Assert.Equal("../x", new Path(new Path("."), new Path("../x")).GetPath());
+
+        Assert.Equal(new Path("out.tmp"), new Path("out").Suffix(".tmp"));
+        Assert.Equal("out.tmp", new Path("out").Suffix(".tmp").GetPath());
+
+        Assert.Equal(
+            "hdfs://host:9000/out",
+            new Path(new Path("hdfs://host:9000"), new Path("out")).ToString());
+        Assert.Equal("/out", new Path(new Path("/"), new Path("out")).GetPath());
+    }
+
     /// <summary>Like Java, which rebuilds the path with <c>new Path(URI)</c>, deserialization
     /// keeps the serialized components exactly: a UNC-style path keeps its double slash, and the
     /// current-directory path (an empty path) can be restored.</summary>

@@ -120,9 +120,15 @@ public class Path : IComparable<Path>
             ? child._path[1..]
             : child._path;
 
+        // as in URI.resolve: an empty parent path (the current directory, ".") keeps a relative
+        // child relative, unless the parent has an authority, under which it becomes absolute
         string parentPath = parent._path;
-        string merged =
-            parentPath is "/" or "" ? "/" + childPath : parentPath + "/" + childPath;
+        string merged = parentPath switch
+        {
+            "/" => "/" + childPath,
+            "" => parent._authority is null ? childPath : "/" + childPath,
+            _ => parentPath + "/" + childPath,
+        };
 
         _scheme = parent._scheme;
         _authority = parent._authority;
