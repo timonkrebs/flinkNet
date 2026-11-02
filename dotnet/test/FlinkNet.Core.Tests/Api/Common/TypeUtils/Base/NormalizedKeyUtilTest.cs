@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 using FlinkNet.Api.Common.TypeUtils.Base;
 using FlinkNet.Core.Memory;
 using Xunit;
