@@ -42,6 +42,9 @@ public class MetricConfig : Dictionary<string, object>
         return TryGetValue(key, out object? value) ? value.ToString()! : defaultValue!;
     }
 
+    // Like Java's Integer.parseInt/Long.parseLong: an optional sign and digits, no white space
+    private const NumberStyles JavaIntegerStyle = NumberStyles.AllowLeadingSign;
+
     public int GetInteger(string key, int defaultValue)
     {
         if (!TryGetValue(key, out object? value))
@@ -50,7 +53,7 @@ public class MetricConfig : Dictionary<string, object>
         }
         return JavaNumbers.IsNumber(value)
             ? JavaNumbers.ToInt(value)
-            : int.Parse(value.ToString()!, CultureInfo.InvariantCulture);
+            : int.Parse(value.ToString()!, JavaIntegerStyle, CultureInfo.InvariantCulture);
     }
 
     public long GetLong(string key, long defaultValue)
@@ -61,7 +64,7 @@ public class MetricConfig : Dictionary<string, object>
         }
         return JavaNumbers.IsNumber(value)
             ? JavaNumbers.ToLong(value)
-            : long.Parse(value.ToString()!, CultureInfo.InvariantCulture);
+            : long.Parse(value.ToString()!, JavaIntegerStyle, CultureInfo.InvariantCulture);
     }
 
     // Like Java's Float/Double.parseFloat, unlike .NET's default parsing: no grouping

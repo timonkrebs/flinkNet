@@ -397,7 +397,8 @@ public static class ConfigurationUtils
                     l));
         }
 
-        return int.Parse(o.ToString()!, CultureInfo.InvariantCulture);
+        // Java: Integer.parseInt, which takes an optional sign and digits only (no white space)
+        return int.Parse(o.ToString()!, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
     }
 
     internal static long ConvertToLong(object o)
@@ -411,7 +412,8 @@ public static class ConfigurationUtils
             return i;
         }
 
-        return long.Parse(o.ToString()!, CultureInfo.InvariantCulture);
+        // Java: Long.parseLong, which takes an optional sign and digits only (no white space)
+        return long.Parse(o.ToString()!, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
     }
 
     internal static bool ConvertToBoolean(object o)

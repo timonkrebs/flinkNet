@@ -42,4 +42,18 @@ public class ConfigurationUtilsTest
         Assert.Equal(8.0, ConfigurationUtils.ConvertToDouble("0x1p3"));
         Assert.Equal(1000f, ConfigurationUtils.ConvertToFloat("1e3"));
     }
+
+    /// <summary>Java's <c>Integer.parseInt</c>/<c>Long.parseLong</c> accept an optional sign
+    /// and digits only, rejecting surrounding white space and grouping separators (outcomes
+    /// verified on a JDK).</summary>
+    [Fact]
+    public void TestIntegerStringsParseLikeJava()
+    {
+        Assert.Equal(5, ConfigurationUtils.ConvertToInt("+5"));
+        Assert.Equal(-5L, ConfigurationUtils.ConvertToLong("-5"));
+        Assert.Throws<FormatException>(() => ConfigurationUtils.ConvertToInt(" 5"));
+        Assert.Throws<FormatException>(() => ConfigurationUtils.ConvertToInt("5 "));
+        Assert.Throws<FormatException>(() => ConfigurationUtils.ConvertToLong(" 5"));
+        Assert.Throws<FormatException>(() => ConfigurationUtils.ConvertToInt("1,000"));
+    }
 }

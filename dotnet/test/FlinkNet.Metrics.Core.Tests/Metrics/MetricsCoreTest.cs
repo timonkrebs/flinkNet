@@ -97,6 +97,20 @@ public class MetricsCoreTest
 
     /// <summary>Native numbers convert like Java's Number.intValue()/longValue(): floating
     /// values truncate toward zero and saturate (NaN to 0), longs narrow to int by wrapping.</summary>
+    /// <summary>Like Java's Integer.parseInt/Long.parseLong, integer strings may not carry
+    /// surrounding white space.</summary>
+    [Fact]
+    public void TestMetricConfigIntegersRejectWhiteSpace()
+    {
+        var config = new MetricConfig();
+        config.SetProperty("value", " 5");
+        Assert.Throws<FormatException>(() => config.GetInteger("value", 0));
+        Assert.Throws<FormatException>(() => config.GetLong("value", 0L));
+
+        config.SetProperty("value", "+5");
+        Assert.Equal(5, config.GetInteger("value", 0));
+    }
+
     /// <summary>A grouping comma is not a valid number for Java's Float/Double.parseFloat; it
     /// must fail rather than read as "15".</summary>
     [Fact]
