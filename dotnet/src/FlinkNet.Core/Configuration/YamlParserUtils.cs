@@ -271,16 +271,15 @@ public static partial class YamlParserUtils
     {
         if (DecimalIntRegex().IsMatch(value))
         {
-            // values exceeding long stay strings; the conversion engine reports them later
-            return long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long l)
-                ? l is >= int.MinValue and <= int.MaxValue ? (object)(int)l : (object)l
-                : null;
+            // like snakeyaml-engine: int, else long, else an exact BigInteger (never a lossy
+            // double through the float fallback)
+            return Narrow(BigInteger.Parse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture));
         }
         // hex and octal are unsigned magnitudes (SnakeYAML parses them as positive integers);
         // .NET's hex parsing would reinterpret a set high bit as two's complement
         if (value.StartsWith("0x", StringComparison.Ordinal) && HexIntRegex().IsMatch(value))
         {
-            return NarrowUnsigned(BigInteger.Parse(
+            return Narrow(BigInteger.Parse(
                 "0" + value[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture));
         }
         if (value.StartsWith("0o", StringComparison.Ordinal) && OctalIntRegex().IsMatch(value))
@@ -290,17 +289,17 @@ public static partial class YamlParserUtils
             {
                 octal = octal * 8 + (digit - '0');
             }
-            return NarrowUnsigned(octal);
+            return Narrow(octal);
         }
         return null;
     }
 
-    /// <summary>Narrows a non-negative integer to int or long; values beyond long stay strings,
-    /// like decimal integers beyond long.</summary>
-    private static object? NarrowUnsigned(BigInteger value) =>
-        value <= int.MaxValue ? (int)value
-            : value <= long.MaxValue ? (long)value
-            : null;
+    /// <summary>Narrows an integer to int or long where it fits and keeps it as an exact
+    /// BigInteger otherwise, as snakeyaml-engine does.</summary>
+    private static object Narrow(BigInteger value) =>
+        value >= int.MinValue && value <= int.MaxValue ? (object)(int)value
+            : value >= long.MinValue && value <= long.MaxValue ? (object)(long)value
+            : value;
 
     private static object? ResolveFloat(string value)
     {

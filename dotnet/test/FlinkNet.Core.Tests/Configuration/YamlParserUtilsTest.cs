@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+using System.Globalization;
+using System.Numerics;
 using FlinkNet.Configuration;
 using Xunit;
 using YamlDotNet.Core;
@@ -270,22 +272,31 @@ public class YamlParserUtilsTest : IDisposable
         Assert.Equal("a,b", YamlParserUtils.ToYamlString("a,b"));
     }
 
-    /// <summary>Hex and octal scalars are unsigned magnitudes, as in snakeyaml-engine (verified
-    /// on a JDK): a set 64th bit must not wrap to a negative long. Values beyond long stay
-    /// strings, like decimal integers beyond long.</summary>
+    /// <summary>Integer scalars beyond long resolve to exact BigIntegers and dump back
+    /// unquoted, as in snakeyaml-engine; hex and octal scalars are unsigned magnitudes, so a set
+    /// 64th bit does not wrap to a negative long (outcomes verified on a JDK).</summary>
     [Fact]
-    public void TestLargeHexAndOctalIntegersAreUnsigned()
+    public void TestLargeIntegersResolveToExactBigIntegers()
     {
+        Assert.Equal(long.MaxValue, YamlParserUtils.ConvertToObject<object>("9223372036854775807"));
         Assert.Equal(long.MaxValue, YamlParserUtils.ConvertToObject<object>("0x7fffffffffffffff"));
         Assert.Equal(2147483648L, YamlParserUtils.ConvertToObject<object>("0x80000000"));
         Assert.Equal(long.MaxValue, YamlParserUtils.ConvertToObject<object>("0o777777777777777777777"));
+
+        BigInteger twoTo64Minus1 = BigInteger.Parse("18446744073709551615", CultureInfo.InvariantCulture);
+        Assert.Equal(twoTo64Minus1, YamlParserUtils.ConvertToObject<object>("18446744073709551615"));
         Assert.Equal(
-            "0xffffffffffffffff", YamlParserUtils.ConvertToObject<object>("0xffffffffffffffff"));
+            BigInteger.Parse("-9223372036854775809", CultureInfo.InvariantCulture),
+            YamlParserUtils.ConvertToObject<object>("-9223372036854775809"));
+        Assert.Equal(twoTo64Minus1, YamlParserUtils.ConvertToObject<object>("0xffffffffffffffff"));
         Assert.Equal(
-            "0x8000000000000000", YamlParserUtils.ConvertToObject<object>("0x8000000000000000"));
-        Assert.Equal(
-            "0o1777777777777777777777",
-            YamlParserUtils.ConvertToObject<object>("0o1777777777777777777777"));
+            new BigInteger(9223372036854775808UL),
+            YamlParserUtils.ConvertToObject<object>("0x8000000000000000"));
+        Assert.Equal(twoTo64Minus1, YamlParserUtils.ConvertToObject<object>("0o1777777777777777777777"));
+
+        var map = YamlParserUtils.ConvertToObject<Dictionary<object, object?>>("key: 0xFFFFFFFFFFFFFFFFFF")!;
+        Assert.Equal(BigInteger.Parse("4722366482869645213695", CultureInfo.InvariantCulture), map["key"]);
+        Assert.Equal("4722366482869645213695", YamlParserUtils.ToYamlString(map["key"]));
     }
 
     [Fact]
