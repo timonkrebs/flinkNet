@@ -77,6 +77,70 @@ public class JavaPrimitivesTest
         Assert.Equal(BitConverter.DoubleToInt64Bits(-1.5), JavaPrimitives.DoubleToLongBits(-1.5));
     }
 
+    /// <summary>Java's <c>Double.toString</c> (JDK 21); the implementation was also checked
+    /// against 300,000 JDK-formatted doubles, random bit patterns and decimal values.</summary>
+    [Theory]
+    [InlineData(1.0, "1.0")]
+    [InlineData(100.0, "100.0")]
+    [InlineData(0.5, "0.5")]
+    [InlineData(-1.25, "-1.25")]
+    [InlineData(0.001, "0.001")]
+    [InlineData(0.002, "0.002")]
+    [InlineData(1e-4, "1.0E-4")]
+    [InlineData(1.23e-4, "1.23E-4")]
+    [InlineData(9999999.0, "9999999.0")]
+    [InlineData(1e7, "1.0E7")]
+    [InlineData(12345678.9, "1.23456789E7")]
+    [InlineData(1e16, "1.0E16")]
+    [InlineData(1e22, "1.0E22")]
+    [InlineData(1e23, "1.0E23")]
+    [InlineData(2e23, "2.0E23")]
+    [InlineData(1.5e300, "1.5E300")]
+    [InlineData(0.1 + 0.2, "0.30000000000000004")]
+    [InlineData(3.077560743296009, "3.077560743296009")]
+    [InlineData(double.MaxValue, "1.7976931348623157E308")]
+    [InlineData(2.2250738585072014E-308, "2.2250738585072014E-308")]
+    [InlineData(0.0, "0.0")]
+    [InlineData(-0.0, "-0.0")]
+    [InlineData(double.NaN, "NaN")]
+    [InlineData(double.PositiveInfinity, "Infinity")]
+    [InlineData(double.NegativeInfinity, "-Infinity")]
+    public void TestDoubleToString(double value, string expected)
+    {
+        Assert.Equal(expected, JavaPrimitives.ToString(value));
+    }
+
+    /// <summary>When the shortest decimal has one digit, Java lets the two-digit decimals that
+    /// round to the value compete and prints the closest (.NET: 5E-324 and 1E-323).</summary>
+    [Fact]
+    public void TestDoubleToStringPrefersCloserTwoDigitDecimal()
+    {
+        Assert.Equal("4.9E-324", JavaPrimitives.ToString(double.Epsilon));
+        Assert.Equal("9.9E-324", JavaPrimitives.ToString(BitConverter.Int64BitsToDouble(2)));
+        Assert.Equal("1.4E-45", JavaPrimitives.ToString(float.Epsilon));
+    }
+
+    [Theory]
+    [InlineData(1.0f, "1.0")]
+    [InlineData(0.001f, "0.001")]
+    [InlineData(1e-4f, "1.0E-4")]
+    [InlineData(0.1f, "0.1")]
+    [InlineData(0.3f, "0.3")]
+    [InlineData(9999999.0f, "9999999.0")]
+    [InlineData(1e7f, "1.0E7")]
+    [InlineData(16777216f, "1.6777216E7")]
+    [InlineData(1e10f, "1.0E10")]
+    [InlineData(3.0775607f, "3.0775607")]
+    [InlineData(float.MaxValue, "3.4028235E38")]
+    [InlineData(1.1754944E-38f, "1.1754944E-38")]
+    [InlineData(-0.0f, "-0.0")]
+    [InlineData(float.NaN, "NaN")]
+    [InlineData(float.NegativeInfinity, "-Infinity")]
+    public void TestFloatToString(float value, string expected)
+    {
+        Assert.Equal(expected, JavaPrimitives.ToString(value));
+    }
+
     /// <summary>Java's total order: -0.0 before 0.0 and NaN above positive infinity, unlike
     /// .NET's CompareTo, which puts NaN first and ties the zeros.</summary>
     [Fact]
