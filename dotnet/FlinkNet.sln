@@ -1,0 +1,100 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1DF200BA-382F-4152-B123-07ADECE8D5EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Annotations", "src\FlinkNet.Annotations\FlinkNet.Annotations.csproj", "{7EF1E001-8E5E-42A7-8567-F48E92B99C79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Core.Api", "src\FlinkNet.Core.Api\FlinkNet.Core.Api.csproj", "{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A85F0F10-FF02-4AE8-82F1-F5E7AA5BEB78}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Core.Api.Tests", "test\FlinkNet.Core.Api.Tests\FlinkNet.Core.Api.Tests.csproj", "{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Core", "src\FlinkNet.Core\FlinkNet.Core.csproj", "{1AD8A317-2BE2-4405-AD87-6DB6F3CF39AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Core.Tests", "test\FlinkNet.Core.Tests\FlinkNet.Core.Tests.csproj", "{74FEF34F-2E3D-441E-800F-D6F250E5FD47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Metrics.Core", "src\FlinkNet.Metrics.Core\FlinkNet.Metrics.Core.csproj", "{1BF1557C-A202-41A9-8047-1F0FDD2C21F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.Metrics.Core.Tests", "test\FlinkNet.Metrics.Core.Tests\FlinkNet.Metrics.Core.Tests.csproj", "{FA85EEBE-AC44-4C15-8000-102263C3A8CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.DataStream.Api", "src\FlinkNet.DataStream.Api\FlinkNet.DataStream.Api.csproj", "{CB0A574F-932E-4BC3-ACD1-B2D12DB6A247}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkNet.DataStream.Api.Tests", "test\FlinkNet.DataStream.Api.Tests\FlinkNet.DataStream.Api.Tests.csproj", "{FA859AE6-65C2-41EF-98BA-6101BC39DCF5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1AD8A317-2BE2-4405-AD87-6DB6F3CF39AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AD8A317-2BE2-4405-AD87-6DB6F3CF39AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AD8A317-2BE2-4405-AD87-6DB6F3CF39AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AD8A317-2BE2-4405-AD87-6DB6F3CF39AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74FEF34F-2E3D-441E-800F-D6F250E5FD47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74FEF34F-2E3D-441E-800F-D6F250E5FD47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74FEF34F-2E3D-441E-800F-D6F250E5FD47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74FEF34F-2E3D-441E-800F-D6F250E5FD47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BF1557C-A202-41A9-8047-1F0FDD2C21F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BF1557C-A202-41A9-8047-1F0FDD2C21F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BF1557C-A202-41A9-8047-1F0FDD2C21F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BF1557C-A202-41A9-8047-1F0FDD2C21F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA85EEBE-AC44-4C15-8000-102263C3A8CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA85EEBE-AC44-4C15-8000-102263C3A8CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA85EEBE-AC44-4C15-8000-102263C3A8CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA85EEBE-AC44-4C15-8000-102263C3A8CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB0A574F-932E-4BC3-ACD1-B2D12DB6A247}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB0A574F-932E-4BC3-ACD1-B2D12DB6A247}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB0A574F-932E-4BC3-ACD1-B2D12DB6A247}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB0A574F-932E-4BC3-ACD1-B2D12DB6A247}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA859AE6-65C2-41EF-98BA-6101BC39DCF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA859AE6-65C2-41EF-98BA-6101BC39DCF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA859AE6-65C2-41EF-98BA-6101BC39DCF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA859AE6-65C2-41EF-98BA-6101BC39DCF5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7EF1E001-8E5E-42A7-8567-F48E92B99C79} = {1DF200BA-382F-4152-B123-07ADECE8D5EE}
+		{0CEA345C-260D-4A4E-B3F4-3ECD8CA2061D} = {1DF200BA-382F-4152-B123-07ADECE8D5EE}
+		{C572AE54-6C5E-4FCD-BBF7-B95AEDEC588C} = {A85F0F10-FF02-4AE8-82F1-F5E7AA5BEB78}
+		{1AD8A317-2BE2-4405-AD87-6DB6F3CF39AD} = {1DF200BA-382F-4152-B123-07ADECE8D5EE}
+		{74FEF34F-2E3D-441E-800F-D6F250E5FD47} = {A85F0F10-FF02-4AE8-82F1-F5E7AA5BEB78}
+		{1BF1557C-A202-41A9-8047-1F0FDD2C21F5} = {1DF200BA-382F-4152-B123-07ADECE8D5EE}
+		{FA85EEBE-AC44-4C15-8000-102263C3A8CA} = {A85F0F10-FF02-4AE8-82F1-F5E7AA5BEB78}
+		{CB0A574F-932E-4BC3-ACD1-B2D12DB6A247} = {1DF200BA-382F-4152-B123-07ADECE8D5EE}
+		{FA859AE6-65C2-41EF-98BA-6101BC39DCF5} = {A85F0F10-FF02-4AE8-82F1-F5E7AA5BEB78}
+	EndGlobalSection
+EndGlobal
