@@ -147,6 +147,33 @@ public class YamlParserUtilsTest : IDisposable
         Assert.Equal("['*', '123', 'true']", YamlParserUtils.ToYamlString(o3));
     }
 
+    /// <summary>SnakeYAML represents doubles and floats with Java's Double/Float.toString and
+    /// the YAML special values .nan, .inf and -.inf (outputs verified with snakeyaml-engine 2.6
+    /// and Flink's dumper settings).</summary>
+    [Fact]
+    public void TestToYamlStringPrintsFloatingPointLikeSnakeYaml()
+    {
+        Assert.Equal("1.0", YamlParserUtils.ToYamlString(1.0));
+        Assert.Equal("1.0E10", YamlParserUtils.ToYamlString(1e10));
+        Assert.Equal("1.5E-5", YamlParserUtils.ToYamlString(1.5e-5));
+        Assert.Equal("0.30000000000000004", YamlParserUtils.ToYamlString(0.1 + 0.2));
+        Assert.Equal("-0.0", YamlParserUtils.ToYamlString(-0.0));
+        Assert.Equal(".nan", YamlParserUtils.ToYamlString(double.NaN));
+        Assert.Equal(".inf", YamlParserUtils.ToYamlString(double.PositiveInfinity));
+        Assert.Equal("-.inf", YamlParserUtils.ToYamlString(double.NegativeInfinity));
+        Assert.Equal("1.0", YamlParserUtils.ToYamlString(1.0f));
+        Assert.Equal("0.1", YamlParserUtils.ToYamlString(0.1f));
+        Assert.Equal(".nan", YamlParserUtils.ToYamlString(float.NaN));
+        Assert.Equal("[1.0, 2.5]", YamlParserUtils.ToYamlString(new List<double> { 1.0, 2.5 }));
+        Assert.Equal(
+            "{a: 1.0E20}",
+            YamlParserUtils.ToYamlString(new Dictionary<string, object> { { "a", 1e20 } }));
+
+        // the special values reload as the same doubles
+        Assert.True(double.IsNaN(YamlParserUtils.ConvertToObject<double>(".nan")));
+        Assert.Equal(double.NegativeInfinity, YamlParserUtils.ConvertToObject<double>("-.inf"));
+    }
+
     /// <summary>Empty collections have no block representation — a bare "key:" reloads as
     /// null — so the block dumper must emit the flow forms <c>[]</c> and <c>{}</c>.</summary>
     [Fact]

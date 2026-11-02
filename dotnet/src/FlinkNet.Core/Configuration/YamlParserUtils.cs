@@ -351,6 +351,12 @@ public static partial class YamlParserUtils
             case bool b:
                 builder.Append(b ? "true" : "false");
                 break;
+            case double d:
+                builder.Append(FormatFloatingPoint(d, JavaPrimitives.ToString(d)));
+                break;
+            case float f:
+                builder.Append(FormatFloatingPoint(f, JavaPrimitives.ToString(f)));
+                break;
             case TimeSpan duration:
                 builder.Append(FormatScalar(TimeUtils.FormatWithHighestUnit(duration), inFlowCollection));
                 break;
@@ -388,6 +394,13 @@ public static partial class YamlParserUtils
                 break;
         }
     }
+
+    // SnakeYAML's representation of Double/Float: the YAML special values, else Java's toString
+    private static string FormatFloatingPoint(double value, string javaString) =>
+        double.IsNaN(value) ? ".nan"
+            : double.IsPositiveInfinity(value) ? ".inf"
+            : double.IsNegativeInfinity(value) ? "-.inf"
+            : javaString;
 
     private static void EmitFlowMapEntries(
         IEnumerable<(object Key, object? Value)> entries, StringBuilder builder)
