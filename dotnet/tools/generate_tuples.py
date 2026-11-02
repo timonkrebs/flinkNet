@@ -191,6 +191,73 @@ public abstract class Tuple
     }}
 
     /// <summary>
+    /// Java's <c>equals</c> of two field values, as the Java tuples compare their boxed fields:
+    /// doubles and floats compare by their canonical bits (-0.0 differs from 0.0, NaN equals
+    /// NaN), everything else as <see cref="EqualityComparer{{T}}.Default"/> does. The type tests
+    /// are resolved by the JIT, so primitive fields are compared without boxing.
+    /// </summary>
+    private protected static bool FieldEquals<TField>(TField? first, TField? second)
+    {{
+        if (typeof(TField) == typeof(double))
+        {{
+            return JavaPrimitives.DoubleToLongBits((double)(object)first!)
+                == JavaPrimitives.DoubleToLongBits((double)(object)second!);
+        }}
+        if (typeof(TField) == typeof(float))
+        {{
+            return JavaPrimitives.FloatToIntBits((float)(object)first!)
+                == JavaPrimitives.FloatToIntBits((float)(object)second!);
+        }}
+        if (default(TField) is not null)
+        {{
+            return EqualityComparer<TField>.Default.Equals(first!, second!);
+        }}
+        return JavaPrimitives.ObjectEquals(first, second);
+    }}
+
+    /// <summary>
+    /// Java's <c>hashCode</c> of a field value (0 for null). It decides the key group of a
+    /// tuple key, so it must be the same in every process: .NET randomizes string hashes per
+    /// process, and its hashes of bool, char and the floating-point types differ from Java's.
+    /// </summary>
+    private protected static int FieldHashCode<TField>(TField? value)
+    {{
+        if (typeof(TField) == typeof(int))
+        {{
+            return (int)(object)value!;
+        }}
+        if (typeof(TField) == typeof(long))
+        {{
+            return JavaPrimitives.HashCode((long)(object)value!);
+        }}
+        if (typeof(TField) == typeof(double))
+        {{
+            return JavaPrimitives.HashCode((double)(object)value!);
+        }}
+        if (typeof(TField) == typeof(float))
+        {{
+            return JavaPrimitives.HashCode((float)(object)value!);
+        }}
+        if (typeof(TField) == typeof(bool))
+        {{
+            return JavaPrimitives.HashCode((bool)(object)value!);
+        }}
+        if (typeof(TField) == typeof(char))
+        {{
+            return (char)(object)value!;
+        }}
+        if (typeof(TField) == typeof(short))
+        {{
+            return (short)(object)value!;
+        }}
+        if (typeof(TField) == typeof(sbyte))
+        {{
+            return (sbyte)(object)value!;
+        }}
+        return JavaPrimitives.ObjectHashCode(value);
+    }}
+
+    /// <summary>
     /// Converts the given object into a string representation by calling
     /// <see cref="object.ToString"/> and formatting (possibly nested) arrays and <c>null</c>.
     /// Mirrors the format of Java's <c>Arrays.deepToString</c>.
@@ -333,7 +400,7 @@ def gen_tuple(arity):
     to_string_parts = ' + "," + '.join(f"ArrayAwareToString(F{i})" for i in range(arity))
 
     equals_checks = "\n".join(
-        f"""        if (!Equals(F{i}, tuple.GetField<object>({i})))
+        f"""        if (!JavaPrimitives.ObjectEquals(F{i}, tuple.GetField<object>({i})))
         {{
             return false;
         }}"""
@@ -341,11 +408,11 @@ def gen_tuple(arity):
     )
 
     typed_equals = "\n                && ".join(
-        f"EqualityComparer<T{i}?>.Default.Equals(F{i}, same.F{i})" for i in range(arity)
+        f"FieldEquals(F{i}, same.F{i})" for i in range(arity)
     )
 
-    hash_lines = ["        int result = F0?.GetHashCode() ?? 0;"] + [
-        f"        result = 31 * result + (F{i}?.GetHashCode() ?? 0);" for i in range(1, arity)
+    hash_lines = ["        int result = FieldHashCode(F0);"] + [
+        f"        result = 31 * result + FieldHashCode(F{i});" for i in range(1, arity)
     ]
     hash_code = "\n".join(hash_lines)
 
@@ -363,6 +430,7 @@ def gen_tuple(arity):
 
     content = f"""{LICENSE}
 using FlinkNet.Annotations;
+using FlinkNet.Util;
 
 namespace FlinkNet.Api.Tuples;
 
@@ -443,9 +511,9 @@ public class Tuple{arity}<{tps}> : Tuple
     public override string ToString() =>
         "(" + {to_string_parts} + ")";
 
-    /// <summary>Deep equality for tuples by calling Equals() on the tuple members. Like Java's
-    /// raw <c>instanceof</c> check, tuples of the same arity class compare structurally across
-    /// generic instantiations.</summary>
+    /// <summary>Deep equality for tuples with Java's <c>equals</c> on the tuple members (see
+    /// <see cref="Tuple.FieldEquals"/>). Like Java's raw <c>instanceof</c> check, tuples of the
+    /// same arity class compare structurally across generic instantiations.</summary>
     /// <param name="obj">the object checked for equality</param>
     /// <returns>true if this is equal to <paramref name="obj"/>.</returns>
     public override bool Equals(object? obj)

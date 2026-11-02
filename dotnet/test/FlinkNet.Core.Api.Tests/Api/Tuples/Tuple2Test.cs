@@ -96,6 +96,34 @@ public class Tuple2Test
         }
     }
 
+    /// <summary>
+    /// Tuple equality and hashing follow Java's boxed <c>equals</c>/<c>hashCode</c> of the
+    /// fields (outcomes verified on a JDK): doubles and floats compare by their canonical bits
+    /// (-0.0 differs from 0.0, NaN equals NaN), and the hash, which decides the key group of a
+    /// tuple key, is Java's, including the string hash, which .NET randomizes per process.
+    /// </summary>
+    [Fact]
+    public void TestEqualsAndHashCodeFollowJava()
+    {
+        Assert.False(Tuple2.Of(-0.0, 1).Equals(Tuple2.Of(0.0, 1)));
+        Assert.True(Tuple2.Of(double.NaN, 1).Equals(Tuple2.Of(double.NaN, 1)));
+        Assert.False(Tuple2.Of(-0.0f, 1).Equals(Tuple2.Of(0.0f, 1)));
+        Assert.False(Tuple2.Of<double?, int>(-0.0, 1).Equals(Tuple2.Of<double?, int>(0.0, 1)));
+        // the structural path across instantiations
+        Assert.False(Tuple2.Of<object?, int>(-0.0, 1).Equals(Tuple2.Of(0.0, 1)));
+        Assert.True(Tuple2.Of<object?, int>(double.NaN, 1).Equals(Tuple2.Of(double.NaN, 1)));
+
+        Assert.Equal(2986975, Tuple2.Of("abc", 1).GetHashCode());
+        Assert.Equal(38258, Tuple2.Of(true, 'a').GetHashCode());
+        Assert.Equal(-2147483648, Tuple2.Of<double, string?>(-0.0, null).GetHashCode());
+        Assert.Equal(-1094189056, Tuple2.Of(double.NaN, 1.5f).GetHashCode());
+        Assert.Equal(-33, Tuple2.Of((sbyte)-1, (short)-2).GetHashCode());
+        Assert.Equal(73471, Tuple2.Of(1L << 40, '￿').GetHashCode());
+        // boxed and nullable fields hash alike
+        Assert.Equal(2986975, Tuple2.Of<object?, object?>("abc", 1).GetHashCode());
+        Assert.Equal(-1094189056, Tuple2.Of<double?, float?>(double.NaN, 1.5f).GetHashCode());
+    }
+
     /// <summary>Java prints floating-point fields with Double/Float.toString, also inside
     /// arrays (outcomes verified on a JDK).</summary>
     [Fact]

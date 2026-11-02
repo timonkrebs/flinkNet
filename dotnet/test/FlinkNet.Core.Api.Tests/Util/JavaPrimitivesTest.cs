@@ -62,6 +62,29 @@ public class JavaPrimitivesTest
         Assert.Throws<ArgumentNullException>(() => JavaPrimitives.HashCode((string)null!));
     }
 
+    /// <summary>Java's boxed equals and hashCode (values from a JDK).</summary>
+    [Fact]
+    public void TestObjectEqualsAndHashCode()
+    {
+        Assert.False(JavaPrimitives.ObjectEquals(-0.0, 0.0));
+        Assert.True(JavaPrimitives.ObjectEquals(double.NaN, double.NaN));
+        Assert.False(JavaPrimitives.ObjectEquals(-0.0f, 0.0f));
+        Assert.False(JavaPrimitives.ObjectEquals(1.0, 1.0f));
+        Assert.True(JavaPrimitives.ObjectEquals(null, null));
+        Assert.False(JavaPrimitives.ObjectEquals("a", null));
+        Assert.True(JavaPrimitives.ObjectEquals("a", "a"));
+
+        Assert.Equal(0, JavaPrimitives.ObjectHashCode(null));
+        Assert.Equal(96354, JavaPrimitives.ObjectHashCode("abc"));
+        Assert.Equal(1231, JavaPrimitives.ObjectHashCode(true));
+        Assert.Equal(65535, JavaPrimitives.ObjectHashCode('￿'));
+        Assert.Equal(-1, JavaPrimitives.ObjectHashCode((sbyte)-1));
+        Assert.Equal(1368, JavaPrimitives.ObjectHashCode((short)1368));
+        Assert.Equal(256, JavaPrimitives.ObjectHashCode(1L << 40));
+        Assert.Equal(1069547520, JavaPrimitives.ObjectHashCode(1.5f));
+        Assert.Equal(-2147483648, JavaPrimitives.ObjectHashCode(-0.0));
+    }
+
     /// <summary>Every NaN collapses to the canonical bit pattern.</summary>
     [Fact]
     public void TestCanonicalNaNBits()

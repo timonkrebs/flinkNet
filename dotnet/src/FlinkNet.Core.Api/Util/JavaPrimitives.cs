@@ -61,6 +61,41 @@ public static class JavaPrimitives
         return hash;
     }
 
+    /// <summary>
+    /// Java's <c>hashCode</c> of a (boxed) value: the Java hash for the types whose .NET hash
+    /// differs (string, bool, char, sbyte, short, long, float, double), else
+    /// <see cref="object.GetHashCode"/>; 0 for null.
+    /// </summary>
+    public static int ObjectHashCode(object? value) =>
+        value switch
+        {
+            null => 0,
+            string s => HashCode(s),
+            bool b => HashCode(b),
+            char c => c,
+            sbyte v => v,
+            short v => v,
+            int v => v,
+            long v => HashCode(v),
+            float v => HashCode(v),
+            double v => HashCode(v),
+            _ => value.GetHashCode(),
+        };
+
+    /// <summary>
+    /// Java's <c>equals</c> of two (boxed) values, null-safe: doubles and floats compare by
+    /// their canonical bits like Java's <c>Double/Float.equals</c> (-0.0 differs from 0.0, NaN
+    /// equals NaN); everything else by <see cref="object.Equals(object)"/>.
+    /// </summary>
+    public static bool ObjectEquals(object? first, object? second) =>
+        first switch
+        {
+            null => second is null,
+            double d => second is double e && DoubleToLongBits(d) == DoubleToLongBits(e),
+            float f => second is float g && FloatToIntBits(f) == FloatToIntBits(g),
+            _ => first.Equals(second),
+        };
+
     /// <summary>Java's <c>Float.floatToIntBits</c>: the bits, with every NaN collapsed to the
     /// canonical 0x7fc00000.</summary>
     public static int FloatToIntBits(float value) =>

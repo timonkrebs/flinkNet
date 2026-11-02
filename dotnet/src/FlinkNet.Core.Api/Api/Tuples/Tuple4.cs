@@ -23,6 +23,7 @@
 // --------------------------------------------------------------
 
 using FlinkNet.Annotations;
+using FlinkNet.Util;
 
 namespace FlinkNet.Api.Tuples;
 
@@ -142,9 +143,9 @@ public class Tuple4<T0, T1, T2, T3> : Tuple
     public override string ToString() =>
         "(" + ArrayAwareToString(F0) + "," + ArrayAwareToString(F1) + "," + ArrayAwareToString(F2) + "," + ArrayAwareToString(F3) + ")";
 
-    /// <summary>Deep equality for tuples by calling Equals() on the tuple members. Like Java's
-    /// raw <c>instanceof</c> check, tuples of the same arity class compare structurally across
-    /// generic instantiations.</summary>
+    /// <summary>Deep equality for tuples with Java's <c>equals</c> on the tuple members (see
+    /// <see cref="Tuple.FieldEquals"/>). Like Java's raw <c>instanceof</c> check, tuples of the
+    /// same arity class compare structurally across generic instantiations.</summary>
     /// <param name="obj">the object checked for equality</param>
     /// <returns>true if this is equal to <paramref name="obj"/>.</returns>
     public override bool Equals(object? obj)
@@ -156,29 +157,29 @@ public class Tuple4<T0, T1, T2, T3> : Tuple
         // fast path for the common same-instantiation case (no reflection, no boxing)
         if (obj is Tuple4<T0, T1, T2, T3> same)
         {
-            return EqualityComparer<T0?>.Default.Equals(F0, same.F0)
-                && EqualityComparer<T1?>.Default.Equals(F1, same.F1)
-                && EqualityComparer<T2?>.Default.Equals(F2, same.F2)
-                && EqualityComparer<T3?>.Default.Equals(F3, same.F3);
+            return FieldEquals(F0, same.F0)
+                && FieldEquals(F1, same.F1)
+                && FieldEquals(F2, same.F2)
+                && FieldEquals(F3, same.F3);
         }
         if (!IsSameTupleClass(obj, typeof(Tuple4<,,,>)))
         {
             return false;
         }
         var tuple = (Tuple)obj!;
-        if (!Equals(F0, tuple.GetField<object>(0)))
+        if (!JavaPrimitives.ObjectEquals(F0, tuple.GetField<object>(0)))
         {
             return false;
         }
-        if (!Equals(F1, tuple.GetField<object>(1)))
+        if (!JavaPrimitives.ObjectEquals(F1, tuple.GetField<object>(1)))
         {
             return false;
         }
-        if (!Equals(F2, tuple.GetField<object>(2)))
+        if (!JavaPrimitives.ObjectEquals(F2, tuple.GetField<object>(2)))
         {
             return false;
         }
-        if (!Equals(F3, tuple.GetField<object>(3)))
+        if (!JavaPrimitives.ObjectEquals(F3, tuple.GetField<object>(3)))
         {
             return false;
         }
@@ -187,10 +188,10 @@ public class Tuple4<T0, T1, T2, T3> : Tuple
 
     public override int GetHashCode()
     {
-        int result = F0?.GetHashCode() ?? 0;
-        result = 31 * result + (F1?.GetHashCode() ?? 0);
-        result = 31 * result + (F2?.GetHashCode() ?? 0);
-        result = 31 * result + (F3?.GetHashCode() ?? 0);
+        int result = FieldHashCode(F0);
+        result = 31 * result + FieldHashCode(F1);
+        result = 31 * result + FieldHashCode(F2);
+        result = 31 * result + FieldHashCode(F3);
         return result;
     }
 

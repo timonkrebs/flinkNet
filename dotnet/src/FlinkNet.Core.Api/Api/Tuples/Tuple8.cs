@@ -23,6 +23,7 @@
 // --------------------------------------------------------------
 
 using FlinkNet.Annotations;
+using FlinkNet.Util;
 
 namespace FlinkNet.Api.Tuples;
 
@@ -190,9 +191,9 @@ public class Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> : Tuple
     public override string ToString() =>
         "(" + ArrayAwareToString(F0) + "," + ArrayAwareToString(F1) + "," + ArrayAwareToString(F2) + "," + ArrayAwareToString(F3) + "," + ArrayAwareToString(F4) + "," + ArrayAwareToString(F5) + "," + ArrayAwareToString(F6) + "," + ArrayAwareToString(F7) + ")";
 
-    /// <summary>Deep equality for tuples by calling Equals() on the tuple members. Like Java's
-    /// raw <c>instanceof</c> check, tuples of the same arity class compare structurally across
-    /// generic instantiations.</summary>
+    /// <summary>Deep equality for tuples with Java's <c>equals</c> on the tuple members (see
+    /// <see cref="Tuple.FieldEquals"/>). Like Java's raw <c>instanceof</c> check, tuples of the
+    /// same arity class compare structurally across generic instantiations.</summary>
     /// <param name="obj">the object checked for equality</param>
     /// <returns>true if this is equal to <paramref name="obj"/>.</returns>
     public override bool Equals(object? obj)
@@ -204,49 +205,49 @@ public class Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> : Tuple
         // fast path for the common same-instantiation case (no reflection, no boxing)
         if (obj is Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> same)
         {
-            return EqualityComparer<T0?>.Default.Equals(F0, same.F0)
-                && EqualityComparer<T1?>.Default.Equals(F1, same.F1)
-                && EqualityComparer<T2?>.Default.Equals(F2, same.F2)
-                && EqualityComparer<T3?>.Default.Equals(F3, same.F3)
-                && EqualityComparer<T4?>.Default.Equals(F4, same.F4)
-                && EqualityComparer<T5?>.Default.Equals(F5, same.F5)
-                && EqualityComparer<T6?>.Default.Equals(F6, same.F6)
-                && EqualityComparer<T7?>.Default.Equals(F7, same.F7);
+            return FieldEquals(F0, same.F0)
+                && FieldEquals(F1, same.F1)
+                && FieldEquals(F2, same.F2)
+                && FieldEquals(F3, same.F3)
+                && FieldEquals(F4, same.F4)
+                && FieldEquals(F5, same.F5)
+                && FieldEquals(F6, same.F6)
+                && FieldEquals(F7, same.F7);
         }
         if (!IsSameTupleClass(obj, typeof(Tuple8<,,,,,,,>)))
         {
             return false;
         }
         var tuple = (Tuple)obj!;
-        if (!Equals(F0, tuple.GetField<object>(0)))
+        if (!JavaPrimitives.ObjectEquals(F0, tuple.GetField<object>(0)))
         {
             return false;
         }
-        if (!Equals(F1, tuple.GetField<object>(1)))
+        if (!JavaPrimitives.ObjectEquals(F1, tuple.GetField<object>(1)))
         {
             return false;
         }
-        if (!Equals(F2, tuple.GetField<object>(2)))
+        if (!JavaPrimitives.ObjectEquals(F2, tuple.GetField<object>(2)))
         {
             return false;
         }
-        if (!Equals(F3, tuple.GetField<object>(3)))
+        if (!JavaPrimitives.ObjectEquals(F3, tuple.GetField<object>(3)))
         {
             return false;
         }
-        if (!Equals(F4, tuple.GetField<object>(4)))
+        if (!JavaPrimitives.ObjectEquals(F4, tuple.GetField<object>(4)))
         {
             return false;
         }
-        if (!Equals(F5, tuple.GetField<object>(5)))
+        if (!JavaPrimitives.ObjectEquals(F5, tuple.GetField<object>(5)))
         {
             return false;
         }
-        if (!Equals(F6, tuple.GetField<object>(6)))
+        if (!JavaPrimitives.ObjectEquals(F6, tuple.GetField<object>(6)))
         {
             return false;
         }
-        if (!Equals(F7, tuple.GetField<object>(7)))
+        if (!JavaPrimitives.ObjectEquals(F7, tuple.GetField<object>(7)))
         {
             return false;
         }
@@ -255,14 +256,14 @@ public class Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> : Tuple
 
     public override int GetHashCode()
     {
-        int result = F0?.GetHashCode() ?? 0;
-        result = 31 * result + (F1?.GetHashCode() ?? 0);
-        result = 31 * result + (F2?.GetHashCode() ?? 0);
-        result = 31 * result + (F3?.GetHashCode() ?? 0);
-        result = 31 * result + (F4?.GetHashCode() ?? 0);
-        result = 31 * result + (F5?.GetHashCode() ?? 0);
-        result = 31 * result + (F6?.GetHashCode() ?? 0);
-        result = 31 * result + (F7?.GetHashCode() ?? 0);
+        int result = FieldHashCode(F0);
+        result = 31 * result + FieldHashCode(F1);
+        result = 31 * result + FieldHashCode(F2);
+        result = 31 * result + FieldHashCode(F3);
+        result = 31 * result + FieldHashCode(F4);
+        result = 31 * result + FieldHashCode(F5);
+        result = 31 * result + FieldHashCode(F6);
+        result = 31 * result + FieldHashCode(F7);
         return result;
     }
 

@@ -181,6 +181,73 @@ public abstract class Tuple
     }
 
     /// <summary>
+    /// Java's <c>equals</c> of two field values, as the Java tuples compare their boxed fields:
+    /// doubles and floats compare by their canonical bits (-0.0 differs from 0.0, NaN equals
+    /// NaN), everything else as <see cref="EqualityComparer{T}.Default"/> does. The type tests
+    /// are resolved by the JIT, so primitive fields are compared without boxing.
+    /// </summary>
+    private protected static bool FieldEquals<TField>(TField? first, TField? second)
+    {
+        if (typeof(TField) == typeof(double))
+        {
+            return JavaPrimitives.DoubleToLongBits((double)(object)first!)
+                == JavaPrimitives.DoubleToLongBits((double)(object)second!);
+        }
+        if (typeof(TField) == typeof(float))
+        {
+            return JavaPrimitives.FloatToIntBits((float)(object)first!)
+                == JavaPrimitives.FloatToIntBits((float)(object)second!);
+        }
+        if (default(TField) is not null)
+        {
+            return EqualityComparer<TField>.Default.Equals(first!, second!);
+        }
+        return JavaPrimitives.ObjectEquals(first, second);
+    }
+
+    /// <summary>
+    /// Java's <c>hashCode</c> of a field value (0 for null). It decides the key group of a
+    /// tuple key, so it must be the same in every process: .NET randomizes string hashes per
+    /// process, and its hashes of bool, char and the floating-point types differ from Java's.
+    /// </summary>
+    private protected static int FieldHashCode<TField>(TField? value)
+    {
+        if (typeof(TField) == typeof(int))
+        {
+            return (int)(object)value!;
+        }
+        if (typeof(TField) == typeof(long))
+        {
+            return JavaPrimitives.HashCode((long)(object)value!);
+        }
+        if (typeof(TField) == typeof(double))
+        {
+            return JavaPrimitives.HashCode((double)(object)value!);
+        }
+        if (typeof(TField) == typeof(float))
+        {
+            return JavaPrimitives.HashCode((float)(object)value!);
+        }
+        if (typeof(TField) == typeof(bool))
+        {
+            return JavaPrimitives.HashCode((bool)(object)value!);
+        }
+        if (typeof(TField) == typeof(char))
+        {
+            return (char)(object)value!;
+        }
+        if (typeof(TField) == typeof(short))
+        {
+            return (short)(object)value!;
+        }
+        if (typeof(TField) == typeof(sbyte))
+        {
+            return (sbyte)(object)value!;
+        }
+        return JavaPrimitives.ObjectHashCode(value);
+    }
+
+    /// <summary>
     /// Converts the given object into a string representation by calling
     /// <see cref="object.ToString"/> and formatting (possibly nested) arrays and <c>null</c>.
     /// Mirrors the format of Java's <c>Arrays.deepToString</c>.
