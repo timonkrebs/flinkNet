@@ -86,6 +86,7 @@ using System.Globalization;
 using System.Text;
 using FlinkNet.Annotations;
 using FlinkNet.Types;
+using FlinkNet.Util;
 
 namespace FlinkNet.Api.Tuples;
 
@@ -218,10 +219,12 @@ public abstract class Tuple
         }}
 
         // culture-independent like Java's toString: a comma decimal separator would make
-        // (1,5,2,5) ambiguous; booleans print like Java's
+        // (1,5,2,5) ambiguous; booleans and floating-point numbers print like Java's
         return o switch
         {{
             bool b => b ? "true" : "false",
+            double d => JavaPrimitives.ToString(d),
+            float f => JavaPrimitives.ToString(f),
             IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
             _ => o.ToString() ?? "null",
         }};

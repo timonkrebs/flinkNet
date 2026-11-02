@@ -95,4 +95,14 @@ public class Tuple2Test
             System.Globalization.CultureInfo.CurrentCulture = previous;
         }
     }
+
+    /// <summary>Java prints floating-point fields with Double/Float.toString, also inside
+    /// arrays (outcomes verified on a JDK).</summary>
+    [Fact]
+    public void TestToStringPrintsFloatingPointLikeJava()
+    {
+        Assert.Equal("(1.0,2.0)", Tuple2.Of(1.0, 2.0f).ToString());
+        Assert.Equal("(1.0E10,NaN)", Tuple2.Of(1e10, double.NaN).ToString());
+        Assert.Equal("([1.0, 2.5],-0.0)", Tuple2.Of(new[] { 1.0, 2.5 }, -0.0f).ToString());
+    }
 }
