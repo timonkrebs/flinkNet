@@ -171,37 +171,60 @@ public static partial class YamlParserUtils
     //  Parsing: YAML node -> object with YAML 1.2 core schema resolution
     // --------------------------------------------------------------------------------------------
 
-    private static object? NodeToObject(YamlNode node)
+    // PORT NOTE: YamlDotNet resolves an alias to the anchored node itself, so a recursive alias
+    // ("a: &a [*a]") would recurse until the stack overflows. snakeyaml-engine builds a
+    // self-containing list instead (which Flink's own flattening cannot handle for maps); the
+    // port rejects recursive aliases with a YamlException. Aliases that are only shared, not
+    // recursive, load as usual: the nodes on the current path are tracked, not all visited ones.
+    private static object? NodeToObject(YamlNode node) => NodeToObject(node, null);
+
+    private static object? NodeToObject(YamlNode node, HashSet<YamlNode>? onPath)
     {
-        switch (node)
+        if (node is YamlScalarNode scalar)
         {
-            case YamlScalarNode scalar:
-                return ScalarToObject(scalar);
-            case YamlSequenceNode sequence:
-                {
-                    var list = new List<object?>();
-                    foreach (YamlNode child in sequence.Children)
+            return ScalarToObject(scalar);
+        }
+
+        // by reference: YamlNode equality is structural and would recurse on a cycle itself
+        onPath ??= new HashSet<YamlNode>(ReferenceEqualityComparer.Instance);
+        if (!onPath.Add(node))
+        {
+            throw new YamlException(node.Start, node.End, "recursive aliases are not supported");
+        }
+        try
+        {
+            switch (node)
+            {
+                case YamlSequenceNode sequence:
                     {
-                        list.Add(NodeToObject(child));
-                    }
-                    return list;
-                }
-            case YamlMappingNode mapping:
-                {
-                    var map = new Dictionary<object, object?>();
-                    foreach (KeyValuePair<YamlNode, YamlNode> child in mapping.Children)
-                    {
-                        object key = NodeToObject(child.Key)!;
-                        if (!map.TryAdd(key, NodeToObject(child.Value)))
+                        var list = new List<object?>();
+                        foreach (YamlNode child in sequence.Children)
                         {
-                            // matches SnakeYAML's duplicate-key error, without leaking values
-                            throw new YamlException("found duplicate key " + key);
+                            list.Add(NodeToObject(child, onPath));
                         }
+                        return list;
                     }
-                    return map;
-                }
-            default:
-                throw new YamlException($"Unsupported YAML node type: {node.GetType()}");
+                case YamlMappingNode mapping:
+                    {
+                        var map = new Dictionary<object, object?>();
+                        foreach (KeyValuePair<YamlNode, YamlNode> child in mapping.Children)
+                        {
+                            object key = NodeToObject(child.Key, onPath)!;
+                            if (!map.TryAdd(key, NodeToObject(child.Value, onPath)))
+                            {
+                                // matches SnakeYAML's duplicate-key error, without leaking values
+                                throw new YamlException("found duplicate key " + key);
+                            }
+                        }
+                        return map;
+                    }
+                default:
+                    throw new YamlException($"Unsupported YAML node type: {node.GetType()}");
+            }
+        }
+        finally
+        {
+            onPath.Remove(node);
         }
     }
 

@@ -55,6 +55,28 @@ public class YamlParserUtilsTest : IDisposable
         Assert.Null(YamlParserUtils.ConvertToObject<object>(string.Empty));
     }
 
+    /// <summary>
+    /// A recursive alias (<c>a: &amp;a [*a]</c>) is rejected with a YamlException instead of
+    /// recursing until the stack overflows, while an alias that is merely shared still loads
+    /// (see the PORT NOTE on NodeToObject).
+    /// </summary>
+    [Fact]
+    public void TestRejectsRecursiveAliases()
+    {
+        Assert.Throws<YamlException>(() => YamlParserUtils.ConvertToObject<object>("a: &a [*a]"));
+        Assert.Throws<YamlException>(() => YamlParserUtils.ConvertToObject<object>("a: &a {b: *a}"));
+        Assert.Throws<YamlException>(() => YamlParserUtils.ConvertToObject<object>("a: &x [1, [2, *x]]"));
+
+        string confFile = Path.Combine(_tmpDir, "recursive.yaml");
+        File.WriteAllText(confFile, "a: &a [*a]\n");
+        Assert.Throws<YamlException>(() => YamlParserUtils.LoadYamlFile(confFile));
+
+        var shared = YamlParserUtils.ConvertToObject<Dictionary<object, object?>>("a: &x [1]\nb: *x\nc: [*x, *x]")!;
+        Assert.Equal(new List<object?> { 1 }, shared["a"]);
+        Assert.Equal(new List<object?> { 1 }, shared["b"]);
+        Assert.Equal(2, ((List<object?>)shared["c"]!).Count);
+    }
+
     [Fact]
     public void TestLoadYamlFile()
     {
