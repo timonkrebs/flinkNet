@@ -18,6 +18,7 @@
 
 using FlinkNet.Annotations;
 using FlinkNet.Core.Memory;
+using FlinkNet.Util;
 
 namespace FlinkNet.Api.Common.TypeUtils.Base;
 
@@ -33,7 +34,9 @@ namespace FlinkNet.Api.Common.TypeUtils.Base;
 /// cannot hold a null value, so reading one fails instead of fabricating
 /// <c>default(TValue)</c>. Use a nullable value type (<c>int?</c>) for such data. Java's
 /// <c>HashMap</c> also allows one null key (when the key serializer supports null, e.g. for
-/// strings), which .NET dictionaries cannot hold; reading one fails with a clear error.</para>
+/// strings), which .NET dictionaries cannot hold; reading one fails with a clear error. The maps
+/// compare keys like Java's <c>HashMap</c> (<see cref="JavaEqualityComparer{T}"/>), so the
+/// keys -0.0 and 0.0 stay distinct.</para>
 /// </summary>
 /// <typeparam name="TKey">The type of the keys in the map.</typeparam>
 /// <typeparam name="TValue">The type of the values in the map.</typeparam>
@@ -89,11 +92,12 @@ public sealed class MapSerializer<TKey, TValue> : TypeSerializer<IDictionary<TKe
             : new MapSerializer<TKey, TValue>(duplicateKeySerializer, duplicateValueSerializer);
     }
 
-    public override IDictionary<TKey, TValue> CreateInstance() => new Dictionary<TKey, TValue>();
+    public override IDictionary<TKey, TValue> CreateInstance() =>
+        new Dictionary<TKey, TValue>(JavaEqualityComparer<TKey>.Default);
 
     public override IDictionary<TKey, TValue> Copy(IDictionary<TKey, TValue> from)
     {
-        var newMap = new Dictionary<TKey, TValue>(from.Count);
+        var newMap = new Dictionary<TKey, TValue>(from.Count, JavaEqualityComparer<TKey>.Default);
 
         foreach (KeyValuePair<TKey, TValue> entry in from)
         {
@@ -137,7 +141,7 @@ public sealed class MapSerializer<TKey, TValue> : TypeSerializer<IDictionary<TKe
     {
         int size = source.ReadInt();
 
-        var map = new Dictionary<TKey, TValue>(size);
+        var map = new Dictionary<TKey, TValue>(size, JavaEqualityComparer<TKey>.Default);
         for (int i = 0; i < size; ++i)
         {
             TKey key = _keySerializer.Deserialize(source);

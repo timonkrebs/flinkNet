@@ -109,4 +109,39 @@ public class MapSerializerTest : SerializerTestBase<IDictionary<long, string>>
             () => serializer.Deserialize(new DataInputDeserializer(output.GetCopyOfBuffer())));
         Assert.Contains("null key", e.Message);
     }
+
+    /// <summary>
+    /// Java restores maps into a HashMap, whose Double keys -0.0 and 0.0 are distinct (verified
+    /// on a JDK); the restored, copied and newly created maps keep both keys instead of letting
+    /// one overwrite the other.
+    /// </summary>
+    [Fact]
+    public void TestSignedZeroKeysStayDistinct()
+    {
+        var output = new DataOutputSerializer(64);
+        output.WriteInt(2);
+        DoubleSerializer.Instance.Serialize(-0.0, output);
+        output.WriteBoolean(false);
+        StringSerializer.Instance.Serialize("negative", output);
+        DoubleSerializer.Instance.Serialize(0.0, output);
+        output.WriteBoolean(false);
+        StringSerializer.Instance.Serialize("positive", output);
+
+        var serializer =
+            new MapSerializer<double, string>(DoubleSerializer.Instance, StringSerializer.Instance);
+        IDictionary<double, string> restored =
+            serializer.Deserialize(new DataInputDeserializer(output.GetCopyOfBuffer()));
+        Assert.Equal(2, restored.Count);
+        Assert.Equal("negative", restored[-0.0]);
+        Assert.Equal("positive", restored[0.0]);
+
+        IDictionary<double, string> copy = serializer.Copy(restored);
+        Assert.Equal(2, copy.Count);
+        Assert.Equal("negative", copy[-0.0]);
+
+        IDictionary<double, string> created = serializer.CreateInstance();
+        created[-0.0] = "negative";
+        created[0.0] = "positive";
+        Assert.Equal(2, created.Count);
+    }
 }
