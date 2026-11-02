@@ -552,7 +552,8 @@ public class Path : IComparable<Path>
     /// Deserializes a path written with <see cref="SerializeToDataOutputView"/>.
     ///
     /// <para>PORT NOTE: the port serializes (scheme, authority, path) component-wise instead of
-    /// Java's seven URI components.</para>
+    /// Java's seven URI components. Like Java, which rebuilds the path with
+    /// <c>new Path(URI)</c>, the components are restored exactly, without normalization.</para>
     /// </summary>
     public static Path? DeserializeFromDataInputView(IDataInputView input)
     {
@@ -564,7 +565,7 @@ public class Path : IComparable<Path>
         string? scheme = StringUtils.ReadNullableString(input);
         string? authority = StringUtils.ReadNullableString(input);
         string path = StringUtils.ReadString(input);
-        return new Path(scheme, authority, path);
+        return new Path(new PathUri(scheme, authority, path));
     }
 
     /// <summary>Serializes the path to the given output view.</summary>

@@ -218,12 +218,32 @@ public class PathTest
 
         foreach (Path? path in paths)
         {
-            var output = new DataOutputSerializer(32);
-            Path.SerializeToDataOutputView(path, output);
-            Path? restored =
-                Path.DeserializeFromDataInputView(new DataInputDeserializer(output.GetCopyOfBuffer()));
-            Assert.Equal(path, restored);
+            Assert.Equal(path, SerializationRoundTrip(path));
         }
+    }
+
+    /// <summary>Like Java, which rebuilds the path with <c>new Path(URI)</c>, deserialization
+    /// keeps the serialized components exactly: a UNC-style path keeps its double slash, and the
+    /// current-directory path (an empty path) can be restored.</summary>
+    [Fact]
+    public void TestSerializationRoundTripKeepsComponents()
+    {
+        var unc = new Path(new PathUri("file", null, "//server/share/data"));
+        Path restoredUnc = SerializationRoundTrip(unc)!;
+        Assert.Equal(unc, restoredUnc);
+        Assert.Equal("//server/share/data", restoredUnc.GetPath());
+
+        var current = new Path(".");
+        Path restoredCurrent = SerializationRoundTrip(current)!;
+        Assert.Equal(current, restoredCurrent);
+        Assert.Equal(current.GetPath(), restoredCurrent.GetPath());
+    }
+
+    private static Path? SerializationRoundTrip(Path? path)
+    {
+        var output = new DataOutputSerializer(32);
+        Path.SerializeToDataOutputView(path, output);
+        return Path.DeserializeFromDataInputView(new DataInputDeserializer(output.GetCopyOfBuffer()));
     }
 
     /// <summary>FromLocalFile yields a file URI with an absolute path, like Java's
