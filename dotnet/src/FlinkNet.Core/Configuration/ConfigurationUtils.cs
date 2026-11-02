@@ -455,7 +455,8 @@ public static class ConfigurationUtils
                     value));
         }
 
-        return float.Parse(o.ToString()!, CultureInfo.InvariantCulture);
+        // Java: Float.parseFloat(o.toString())
+        return JavaPrimitives.ParseFloat(o.ToString()!);
     }
 
     internal static double ConvertToDouble(object o)
@@ -469,7 +470,8 @@ public static class ConfigurationUtils
             return f;
         }
 
-        return double.Parse(o.ToString()!, CultureInfo.InvariantCulture);
+        // Java: Double.parseDouble(o.toString())
+        return JavaPrimitives.ParseDouble(o.ToString()!);
     }
 
     // --------------------------------------------------------------------------------------------

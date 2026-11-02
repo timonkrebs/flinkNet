@@ -19,6 +19,7 @@
 using System.Globalization;
 using System.Numerics;
 using System.Text;
+using System.Text.RegularExpressions;
 using FlinkNet.Annotations;
 
 namespace FlinkNet.Util;
@@ -35,7 +36,7 @@ namespace FlinkNet.Util;
 /// .NET prints <c>1</c> and <c>1E+10</c>.</para>
 /// </summary>
 [Internal]
-public static class JavaPrimitives
+public static partial class JavaPrimitives
 {
     /// <summary>Java's <c>Boolean.hashCode</c>.</summary>
     public static int HashCode(bool value) => value ? 1231 : 1237;
@@ -193,6 +194,178 @@ public static class JavaPrimitives
         }
         return Format(negative, digits, exponent);
     }
+
+    /// <summary>
+    /// Java's <c>Double.parseDouble</c>: the value is trimmed of characters up to U+0020, and
+    /// accepts an optional sign with <c>NaN</c>, <c>Infinity</c> (case-sensitive), a decimal
+    /// number with an optional exponent, or a hexadecimal float (<c>0x1.8p1</c>), each with an
+    /// optional <c>f</c>/<c>d</c> type suffix. Unlike .NET's default parsing, grouping separators
+    /// ("1,5") are rejected.
+    /// </summary>
+    /// <exception cref="FormatException">If the value is not a Java floating-point literal (Java:
+    /// <c>NumberFormatException</c>).</exception>
+    public static double ParseDouble(string value)
+    {
+        string s = JavaTrim(value);
+        if (TryParseSpecial(s, out bool negative, out bool isNaN))
+        {
+            // the canonical NaN: .NET's double.NaN has the sign bit set
+            return isNaN
+                ? BitConverter.Int64BitsToDouble(0x7ff8000000000000L)
+                : negative ? double.NegativeInfinity : double.PositiveInfinity;
+        }
+        Match hex = HexFloatRegex().Match(s);
+        if (hex.Success)
+        {
+            return BitConverter.Int64BitsToDouble(HexFloatToBits(hex, fractionBits: 52, exponentBias: 1023));
+        }
+        return double.Parse(CheckDecimal(s, value), DecimalStyle, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Java's <c>Float.parseFloat</c>, with the grammar of <see cref="ParseDouble"/>;
+    /// the value is rounded once, directly to float.</summary>
+    /// <exception cref="FormatException">If the value is not a Java floating-point
+    /// literal.</exception>
+    public static float ParseFloat(string value)
+    {
+        string s = JavaTrim(value);
+        if (TryParseSpecial(s, out bool negative, out bool isNaN))
+        {
+            return isNaN
+                ? BitConverter.Int32BitsToSingle(0x7fc00000)
+                : negative ? float.NegativeInfinity : float.PositiveInfinity;
+        }
+        Match hex = HexFloatRegex().Match(s);
+        if (hex.Success)
+        {
+            return BitConverter.Int32BitsToSingle((int)HexFloatToBits(hex, fractionBits: 23, exponentBias: 127));
+        }
+        return float.Parse(CheckDecimal(s, value), DecimalStyle, CultureInfo.InvariantCulture);
+    }
+
+    private const NumberStyles DecimalStyle =
+        NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent;
+
+    // Java's String.trim: removes the characters up to U+0020 (incl. control characters, but
+    // not other Unicode white space such as U+00A0)
+    private static string JavaTrim(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        int start = 0;
+        int end = value.Length;
+        while (start < end && value[start] <= ' ')
+        {
+            start++;
+        }
+        while (end > start && value[end - 1] <= ' ')
+        {
+            end--;
+        }
+        return value[start..end];
+    }
+
+    private static bool TryParseSpecial(string s, out bool negative, out bool isNaN)
+    {
+        negative = s.StartsWith('-');
+        string unsigned = s.Length > 0 && (s[0] == '-' || s[0] == '+') ? s[1..] : s;
+        isNaN = unsigned == "NaN";
+        return isNaN || unsigned == "Infinity";
+    }
+
+    // validates Java's decimal grammar and drops the type suffix, which .NET does not accept
+    private static string CheckDecimal(string s, string original)
+    {
+        if (!DecimalFloatRegex().IsMatch(s))
+        {
+            throw new FormatException("For input string: \"" + original + "\"");
+        }
+        return s[^1] is 'f' or 'F' or 'd' or 'D' ? s[..^1] : s;
+    }
+
+    // The IEEE bits of a hexadecimal float (sign, mantissa * 2^exponent) in a binary format with
+    // the given fraction width and exponent bias, rounded once, half to even, like Java.
+    private static long HexFloatToBits(Match hex, int fractionBits, int exponentBias)
+    {
+        // the sign is the top bit: bit 63 of a double, bit 31 of a float
+        int signBit = fractionBits == 52 ? 63 : 31;
+        long sign = hex.Groups[1].Value == "-" ? 1L << signBit : 0L;
+        long infinity = ((2L * exponentBias) + 1) << fractionBits;
+        string integerDigits = hex.Groups[2].Value;
+        string fractionDigits = hex.Groups[3].Value;
+        if (integerDigits.Length + fractionDigits.Length == 0)
+        {
+            throw new FormatException("For input string: \"" + hex.Value + "\"");
+        }
+        BigInteger mantissa = BigInteger.Parse(
+            "0" + integerDigits + fractionDigits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
+        if (mantissa.IsZero)
+        {
+            return sign;
+        }
+        // an exponent too long for a long is certainly out of range
+        if (!long.TryParse(hex.Groups[4].Value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long exponent))
+        {
+            return sign | (hex.Groups[4].Value.StartsWith('-') ? 0L : infinity);
+        }
+
+        // value = mantissa * 2^binaryExponent; the leading bit has the unbiased exponent `lead`
+        long binaryExponent = exponent - 4L * fractionDigits.Length;
+        long bitLength = (long)mantissa.GetBitLength();
+        long lead = bitLength - 1 + binaryExponent;
+        long minExponent = 1 - exponentBias;
+        if (lead > exponentBias + 1)
+        {
+            return sign | infinity;
+        }
+        if (lead < minExponent - fractionBits - 2)
+        {
+            return sign; // below half the smallest subnormal: rounds to zero
+        }
+
+        // keep fractionBits + 1 significant bits, or fewer for a subnormal result
+        int precision = fractionBits + 1;
+        long shift = bitLength - precision + Math.Max(0, minExponent - lead);
+        BigInteger q;
+        if (shift > 0)
+        {
+            q = mantissa >> (int)shift;
+            BigInteger remainder = mantissa - (q << (int)shift);
+            int half = (remainder << 1).CompareTo(BigInteger.One << (int)shift);
+            if (half > 0 || (half == 0 && !q.IsEven))
+            {
+                q += 1;
+            }
+        }
+        else
+        {
+            q = mantissa << (int)-shift;
+        }
+        long resultExponent = binaryExponent + shift; // value = q * 2^resultExponent
+        if (q.GetBitLength() > precision)
+        {
+            // rounding carried into a new leading bit
+            q >>= 1;
+            resultExponent++;
+        }
+
+        long bits = (long)q;
+        if (q.GetBitLength() < precision)
+        {
+            return sign | bits; // subnormal (exponent field zero) or zero
+        }
+        long biased = precision - 1 + resultExponent + exponentBias;
+        if (biased >= 2L * exponentBias + 1)
+        {
+            return sign | infinity;
+        }
+        return sign | (biased << fractionBits) | (bits & ((1L << fractionBits) - 1));
+    }
+
+    [GeneratedRegex("^[+-]?(?:[0-9]+\\.?[0-9]*|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?[fFdD]?$")]
+    private static partial Regex DecimalFloatRegex();
+
+    [GeneratedRegex("^([+-]?)0[xX]([0-9a-fA-F]*)(?:\\.([0-9a-fA-F]*))?[pP]([+-]?[0-9]+)[fFdD]?$")]
+    private static partial Regex HexFloatRegex();
 
     /// <summary>
     /// Java's <c>String.valueOf</c> of a value, with (possibly nested) arrays rendered like

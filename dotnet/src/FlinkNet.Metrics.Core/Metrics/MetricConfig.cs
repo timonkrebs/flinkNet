@@ -64,6 +64,13 @@ public class MetricConfig : Dictionary<string, object>
             : long.Parse(value.ToString()!, CultureInfo.InvariantCulture);
     }
 
+    // Like Java's Float/Double.parseFloat, unlike .NET's default parsing: no grouping
+    // separators ("1,5" is not 15).
+    // PORT NOTE: Java also accepts an f/d type suffix and hexadecimal floats, which this
+    // assembly (like flink-metrics-core, which depends only on the annotations) cannot take
+    // from JavaPrimitives.ParseFloat; such values fail here.
+    private const NumberStyles JavaFloatStyle = NumberStyles.Float;
+
     public float GetFloat(string key, float defaultValue)
     {
         if (!TryGetValue(key, out object? value))
@@ -75,7 +82,7 @@ public class MetricConfig : Dictionary<string, object>
             float f => f,
             IConvertible c and (int or long or short or byte or double or decimal) =>
                 c.ToSingle(CultureInfo.InvariantCulture),
-            _ => float.Parse(value.ToString()!, CultureInfo.InvariantCulture),
+            _ => float.Parse(value.ToString()!, JavaFloatStyle, CultureInfo.InvariantCulture),
         };
     }
 
@@ -90,7 +97,7 @@ public class MetricConfig : Dictionary<string, object>
             double d => d,
             IConvertible c and (int or long or short or byte or float or decimal) =>
                 c.ToDouble(CultureInfo.InvariantCulture),
-            _ => double.Parse(value.ToString()!, CultureInfo.InvariantCulture),
+            _ => double.Parse(value.ToString()!, JavaFloatStyle, CultureInfo.InvariantCulture),
         };
     }
 

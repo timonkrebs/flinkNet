@@ -97,6 +97,21 @@ public class MetricsCoreTest
 
     /// <summary>Native numbers convert like Java's Number.intValue()/longValue(): floating
     /// values truncate toward zero and saturate (NaN to 0), longs narrow to int by wrapping.</summary>
+    /// <summary>A grouping comma is not a valid number for Java's Float/Double.parseFloat; it
+    /// must fail rather than read as "15".</summary>
+    [Fact]
+    public void TestMetricConfigRejectsGroupingSeparators()
+    {
+        var config = new MetricConfig();
+        config.SetProperty("value", "1,5");
+        Assert.Throws<FormatException>(() => config.GetFloat("value", 0f));
+        Assert.Throws<FormatException>(() => config.GetDouble("value", 0.0));
+
+        config.SetProperty("value", " 1.5 ");
+        Assert.Equal(1.5f, config.GetFloat("value", 0f));
+        Assert.Equal(1.5, config.GetDouble("value", 0.0));
+    }
+
     [Fact]
     public void TestMetricConfigNumericConversionsFollowJava()
     {

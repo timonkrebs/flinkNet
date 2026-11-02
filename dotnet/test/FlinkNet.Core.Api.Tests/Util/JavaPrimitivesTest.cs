@@ -112,6 +112,66 @@ public class JavaPrimitivesTest
         Assert.Equal("[[...], [1, 2]]", JavaPrimitives.DeepToString(mixed));
     }
 
+    /// <summary>Java's <c>Double.parseDouble</c> grammar; the expected bits were produced on a
+    /// JDK (null: Java throws a NumberFormatException).</summary>
+    [Theory]
+    [InlineData(" 1.5 ", 0x3ff8000000000000L)]
+    [InlineData("\u00011.5\u0001", 0x3ff8000000000000L)]
+    [InlineData("1.5d", 0x3ff8000000000000L)]
+    [InlineData("1.5F", 0x3ff8000000000000L)]
+    [InlineData("+1.5", 0x3ff8000000000000L)]
+    [InlineData("1.", 0x3ff0000000000000L)]
+    [InlineData("-.5e-3D", unchecked((long)0xbf40624dd2f1a9fcUL))]
+    [InlineData("-NaN", 0x7ff8000000000000L)]
+    [InlineData("+Infinity", 0x7ff0000000000000L)]
+    [InlineData("1e400", 0x7ff0000000000000L)]
+    [InlineData("0x1.8p1", 0x4008000000000000L)]
+    [InlineData("0X.8P1", 0x3ff0000000000000L)]
+    [InlineData("-0x0p0", unchecked((long)0x8000000000000000UL))]
+    [InlineData("0x1p-1074", 0x1L)]
+    [InlineData("0x1p-1075", 0x0L)]
+    [InlineData("0x1.0000000000001p0", 0x3ff0000000000001L)]
+    [InlineData("0x1.fffffffffffff8p1023", 0x7ff0000000000000L)]
+    [InlineData("1,5", null)]
+    [InlineData("1,000.5", null)]
+    [InlineData("1_0", null)]
+    [InlineData("nan", null)]
+    [InlineData("infinity", null)]
+    [InlineData("1.5ff", null)]
+    [InlineData("", null)]
+    [InlineData("  ", null)]
+    [InlineData("0x1", null)]
+    [InlineData("0x.p1", null)]
+    [InlineData(" 1.5", null)]
+    [InlineData("1.5e", null)]
+    [InlineData("e5", null)]
+    [InlineData("١", null)]
+    public void TestParseDouble(string value, long? expectedBits)
+    {
+        if (expectedBits is null)
+        {
+            Assert.Throws<FormatException>(() => JavaPrimitives.ParseDouble(value));
+        }
+        else
+        {
+            Assert.Equal(expectedBits.Value, BitConverter.DoubleToInt64Bits(JavaPrimitives.ParseDouble(value)));
+        }
+    }
+
+    /// <summary>Java's <c>Float.parseFloat</c> rounds once, directly to float: the exact
+    /// halfway value 0x1.ffffffp127 rounds to infinity, while its double approximation, written
+    /// in decimal, rounds to the largest float (outcomes verified on a JDK).</summary>
+    [Fact]
+    public void TestParseFloatRoundsOnce()
+    {
+        Assert.Equal(float.PositiveInfinity, JavaPrimitives.ParseFloat("0x1.ffffffp127"));
+        Assert.Equal(float.MaxValue, JavaPrimitives.ParseFloat("3.4028235677973366E38"));
+        Assert.Equal(0.0f, JavaPrimitives.ParseFloat("0x1p-1074"));
+        Assert.Equal(1.0f, JavaPrimitives.ParseFloat("0x1.0000000000001p0"));
+        Assert.Equal(1.5f, JavaPrimitives.ParseFloat(" 1.5F "));
+        Assert.Throws<FormatException>(() => JavaPrimitives.ParseFloat("1,5"));
+    }
+
     /// <summary>Every NaN collapses to the canonical bit pattern.</summary>
     [Fact]
     public void TestCanonicalNaNBits()
