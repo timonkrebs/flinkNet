@@ -82,8 +82,6 @@ def gen_tuple_base():
     )
 
     content = f"""{LICENSE}
-using System.Globalization;
-using System.Text;
 using FlinkNet.Annotations;
 using FlinkNet.Types;
 using FlinkNet.Util;
@@ -258,46 +256,6 @@ public abstract class Tuple
     }}
 
     /// <summary>
-    /// Converts the given object into a string representation by calling
-    /// <see cref="object.ToString"/> and formatting (possibly nested) arrays and <c>null</c>.
-    /// Mirrors the format of Java's <c>Arrays.deepToString</c>.
-    /// </summary>
-    internal static string ArrayAwareToString(object? o)
-    {{
-        if (o is null)
-        {{
-            return "null";
-        }}
-
-        if (o is Array array)
-        {{
-            var builder = new StringBuilder("[");
-            bool first = true;
-            foreach (object? element in array)
-            {{
-                if (!first)
-                {{
-                    builder.Append(", ");
-                }}
-                first = false;
-                builder.Append(ArrayAwareToString(element));
-            }}
-            return builder.Append(']').ToString();
-        }}
-
-        // culture-independent like Java's toString: a comma decimal separator would make
-        // (1,5,2,5) ambiguous; booleans and floating-point numbers print like Java's
-        return o switch
-        {{
-            bool b => b ? "true" : "false",
-            double d => JavaPrimitives.ToString(d),
-            float f => JavaPrimitives.ToString(f),
-            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
-            _ => o.ToString() ?? "null",
-        }};
-    }}
-
-    /// <summary>
     /// Whether the object is an instantiation (or a subclass of an instantiation) of the given
     /// open generic tuple class. PORT NOTE: replicates Java's raw <c>instanceof TupleN</c>
     /// checks, which compare tuples structurally across generic instantiations.
@@ -397,7 +355,7 @@ def gen_tuple(arity):
         for i in range(arity)
     )
 
-    to_string_parts = ' + "," + '.join(f"ArrayAwareToString(F{i})" for i in range(arity))
+    to_string_parts = ' + "," + '.join(f"JavaPrimitives.DeepToString(F{i})" for i in range(arity))
 
     equals_checks = "\n".join(
         f"""        if (!JavaPrimitives.ObjectEquals(F{i}, tuple.GetField<object>({i})))

@@ -194,6 +194,58 @@ public static class JavaPrimitives
         return Format(negative, digits, exponent);
     }
 
+    /// <summary>
+    /// Java's <c>String.valueOf</c> of a value, with (possibly nested) arrays rendered like
+    /// <c>Arrays.deepToString</c>: <c>null</c>, booleans in lower case, floating-point numbers
+    /// like <see cref="ToString(double)"/>, other formattable values culture-independently. This
+    /// is the format of Flink's <c>StringUtils.arrayAwareToString</c> and of tuple fields.
+    /// </summary>
+    public static string DeepToString(object? value)
+    {
+        var builder = new StringBuilder();
+        AppendDeep(value, builder);
+        return builder.ToString();
+    }
+
+    private static void AppendDeep(object? value, StringBuilder builder)
+    {
+        switch (value)
+        {
+            case null:
+                builder.Append("null");
+                return;
+            case Array array:
+                builder.Append('[');
+                bool first = true;
+                foreach (object? element in array)
+                {
+                    if (!first)
+                    {
+                        builder.Append(", ");
+                    }
+                    first = false;
+                    AppendDeep(element, builder);
+                }
+                builder.Append(']');
+                return;
+            case bool b:
+                builder.Append(b ? "true" : "false");
+                return;
+            case double d:
+                builder.Append(ToString(d));
+                return;
+            case float f:
+                builder.Append(ToString(f));
+                return;
+            case IFormattable formattable:
+                builder.Append(formattable.ToString(null, CultureInfo.InvariantCulture));
+                return;
+            default:
+                builder.Append(value.ToString() ?? "null");
+                return;
+        }
+    }
+
     private static string SpecialToString(bool isNaN, bool isNegative, bool isInfinity) =>
         isNaN ? "NaN"
             : isInfinity ? (isNegative ? "-Infinity" : "Infinity")

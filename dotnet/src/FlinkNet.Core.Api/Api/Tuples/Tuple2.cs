@@ -121,7 +121,7 @@ public class Tuple2<T0, T1> : Tuple
     /// field.
     /// </summary>
     public override string ToString() =>
-        "(" + ArrayAwareToString(F0) + "," + ArrayAwareToString(F1) + ")";
+        "(" + JavaPrimitives.DeepToString(F0) + "," + JavaPrimitives.DeepToString(F1) + ")";
 
     /// <summary>Deep equality for tuples with Java's <c>equals</c> on the tuple members (see
     /// <see cref="Tuple.FieldEquals"/>). Like Java's raw <c>instanceof</c> check, tuples of the

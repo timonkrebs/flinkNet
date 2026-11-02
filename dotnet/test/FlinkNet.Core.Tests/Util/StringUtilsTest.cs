@@ -53,6 +53,17 @@ public class StringUtilsTest
                 new object?[] { new int[] { 4, 5, 6 }, null, DayOfWeek.Monday }));
     }
 
+    /// <summary>Elements print like Java's <c>String.valueOf</c>: booleans in lower case and
+    /// floating-point numbers like Double/Float.toString (outcomes verified on a JDK).</summary>
+    [Fact]
+    public void TestArrayAwareToStringFormatsLikeJava()
+    {
+        Assert.Equal("true", StringUtils.ArrayAwareToString(true));
+        Assert.Equal("1.0E10", StringUtils.ArrayAwareToString(1e10));
+        Assert.Equal("[1.0, 2.5]", StringUtils.ArrayAwareToString(new[] { 1.0, 2.5 }));
+        Assert.Equal("[false, 0.1]", StringUtils.ArrayAwareToString(new object[] { false, 0.1f }));
+    }
+
     [Fact]
     public void TestStringToHexArray()
     {

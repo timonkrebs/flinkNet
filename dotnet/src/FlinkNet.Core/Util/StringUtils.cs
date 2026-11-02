@@ -88,35 +88,11 @@ public static class StringUtils
     }
 
     /// <summary>
-    /// Converts the given object into a string representation by calling
-    /// <see cref="object.ToString"/> and formatting (possibly nested) arrays and <c>null</c>.
-    /// Mirrors the format of Java's <c>Arrays.deepToString</c>.
+    /// Converts the given object into a string representation like Java's
+    /// <c>String.valueOf</c>, formatting (possibly nested) arrays like
+    /// <c>Arrays.deepToString</c> (see <see cref="JavaPrimitives.DeepToString"/>).
     /// </summary>
-    public static string ArrayAwareToString(object? o)
-    {
-        if (o is null)
-        {
-            return "null";
-        }
-
-        if (o is Array array)
-        {
-            var builder = new StringBuilder("[");
-            bool first = true;
-            foreach (object? element in array)
-            {
-                if (!first)
-                {
-                    builder.Append(", ");
-                }
-                first = false;
-                builder.Append(ArrayAwareToString(element));
-            }
-            return builder.Append(']').ToString();
-        }
-
-        return Convert.ToString(o, CultureInfo.InvariantCulture) ?? "null";
-    }
+    public static string ArrayAwareToString(object? o) => JavaPrimitives.DeepToString(o);
 
     /// <summary>
     /// Replaces control characters by their escape-coded version. For example, if the string

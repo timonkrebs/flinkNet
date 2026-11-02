@@ -201,7 +201,7 @@ public class Tuple9<T0, T1, T2, T3, T4, T5, T6, T7, T8> : Tuple
     /// field.
     /// </summary>
     public override string ToString() =>
-        "(" + ArrayAwareToString(F0) + "," + ArrayAwareToString(F1) + "," + ArrayAwareToString(F2) + "," + ArrayAwareToString(F3) + "," + ArrayAwareToString(F4) + "," + ArrayAwareToString(F5) + "," + ArrayAwareToString(F6) + "," + ArrayAwareToString(F7) + "," + ArrayAwareToString(F8) + ")";
+        "(" + JavaPrimitives.DeepToString(F0) + "," + JavaPrimitives.DeepToString(F1) + "," + JavaPrimitives.DeepToString(F2) + "," + JavaPrimitives.DeepToString(F3) + "," + JavaPrimitives.DeepToString(F4) + "," + JavaPrimitives.DeepToString(F5) + "," + JavaPrimitives.DeepToString(F6) + "," + JavaPrimitives.DeepToString(F7) + "," + JavaPrimitives.DeepToString(F8) + ")";
 
     /// <summary>Deep equality for tuples with Java's <c>equals</c> on the tuple members (see
     /// <see cref="Tuple.FieldEquals"/>). Like Java's raw <c>instanceof</c> check, tuples of the
