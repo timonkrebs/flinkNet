@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+using System.Text;
 using FlinkNet.Core.Memory;
 using Xunit;
 
@@ -290,4 +291,59 @@ public class DataInputOutputSerializationTest
         Assert.True(buffered.CanWrite);
         Assert.Equal<byte[]>([0, 0, 0, 42], target.ToArray());
     }
+
+    /// <summary>
+    /// Like Java's <c>DataInputStream.readLine</c>, the input wrapper ends a line at LF, CR or
+    /// CRLF, and the byte after a lone CR stays available to the next read of any kind
+    /// (outcomes verified on a JDK). <see cref="DataInputDeserializer"/> keeps Flink's own
+    /// LF-only variant.
+    /// </summary>
+    [Fact]
+    public void TestStreamWrapperReadLineTerminators()
+    {
+        var lines = WrapLatin1("a\rb\nc\r\nd\r");
+        Assert.Equal("a", lines.ReadLine());
+        Assert.Equal("b", lines.ReadLine());
+        Assert.Equal("c", lines.ReadLine());
+        Assert.Equal("d", lines.ReadLine());
+        Assert.Null(lines.ReadLine());
+
+        var mixed = WrapLatin1("a\rXY\r\r\n");
+        Assert.Equal("a", mixed.ReadLine());
+        Assert.Equal((byte)'X', mixed.ReadByte());
+        Assert.Equal("Y", mixed.ReadLine());
+        Assert.Equal(string.Empty, mixed.ReadLine());
+        Assert.Null(mixed.ReadLine());
+
+        var fully = WrapLatin1("a\rXYZW");
+        Assert.Equal("a", fully.ReadLine());
+        byte[] three = new byte[3];
+        fully.ReadFully(three);
+        Assert.Equal("XYZ", Encoding.Latin1.GetString(three));
+        Assert.Equal('W', fully.ReadUnsignedByte());
+
+        var unsigned = WrapLatin1("\rÿ");
+        Assert.Equal(string.Empty, unsigned.ReadLine());
+        Assert.Equal(255, unsigned.ReadUnsignedByte());
+        Assert.Equal(-1, unsigned.Read(new byte[1]));
+
+        var skip = WrapLatin1("a\rbc");
+        Assert.Equal("a", skip.ReadLine());
+        Assert.Equal(2, skip.SkipBytes(5));
+        Assert.Equal(-1, skip.Read(new byte[1]));
+
+        var read = WrapLatin1("a\rbc");
+        Assert.Equal("a", read.ReadLine());
+        byte[] five = new byte[5];
+        Assert.Equal(2, read.Read(five, 0, 5));
+        Assert.Equal((byte)'b', five[0]);
+        Assert.Equal((byte)'c', five[1]);
+
+        var number = WrapLatin1("a\r\0\0\0\u0007");
+        Assert.Equal("a", number.ReadLine());
+        Assert.Equal(7, number.ReadInt());
+    }
+
+    private static DataInputViewStreamWrapper WrapLatin1(string text) =>
+        new(new MemoryStream(Encoding.Latin1.GetBytes(text)));
 }

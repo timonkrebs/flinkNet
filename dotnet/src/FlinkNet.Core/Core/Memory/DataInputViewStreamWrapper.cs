@@ -27,6 +27,10 @@ namespace FlinkNet.Core.Memory;
 /// (the port of Java's <c>DataInputStream</c>-based wrapper). Disposing the wrapper disposes
 /// the underlying stream, like closing Java's <c>DataInputStream</c>, unless it was created with
 /// <c>leaveOpen</c> (the .NET reader convention).
+///
+/// <para><see cref="ReadLine"/> follows Java's <c>DataInputStream.readLine</c>: a line ends at
+/// LF, CR or CRLF. To recognize a lone CR it reads one byte ahead and keeps that byte for the
+/// next read, as Java does by wrapping its stream in a <c>PushbackInputStream</c>.</para>
 /// </summary>
 [PublicEvolving]
 public class DataInputViewStreamWrapper : IDataInputView, IDisposable
@@ -36,6 +40,9 @@ public class DataInputViewStreamWrapper : IDataInputView, IDisposable
     private readonly bool _leaveOpen;
 
     private bool _disposed;
+
+    // the byte read ahead after a lone '\r' by ReadLine, or -1; every read consumes it first
+    private int _pushback = -1;
 
     public DataInputViewStreamWrapper(Stream inStream, bool leaveOpen = false)
     {
@@ -75,7 +82,8 @@ public class DataInputViewStreamWrapper : IDataInputView, IDisposable
 
     public void ReadFully(byte[] b, int off, int len)
     {
-        _in.ReadExactly(b, off, len);
+        ArgumentNullException.ThrowIfNull(b);
+        ReadExactly(b.AsSpan(off, len));
     }
 
     public int SkipBytes(int n)
@@ -83,7 +91,7 @@ public class DataInputViewStreamWrapper : IDataInputView, IDisposable
         int total = 0;
         while (total < n)
         {
-            int b = _in.ReadByte();
+            int b = ReadRawByte();
             if (b < 0)
             {
                 break;
@@ -99,7 +107,7 @@ public class DataInputViewStreamWrapper : IDataInputView, IDisposable
 
     public int ReadUnsignedByte()
     {
-        int b = _in.ReadByte();
+        int b = ReadRawByte();
         if (b < 0)
         {
             throw new EndOfStreamException();
@@ -116,14 +124,14 @@ public class DataInputViewStreamWrapper : IDataInputView, IDisposable
     public int ReadInt()
     {
         Span<byte> buf = stackalloc byte[4];
-        _in.ReadExactly(buf);
+        ReadExactly(buf);
         return BinaryPrimitives.ReadInt32BigEndian(buf);
     }
 
     public long ReadLong()
     {
         Span<byte> buf = stackalloc byte[8];
-        _in.ReadExactly(buf);
+        ReadExactly(buf);
         return BinaryPrimitives.ReadInt64BigEndian(buf);
     }
 
@@ -133,22 +141,27 @@ public class DataInputViewStreamWrapper : IDataInputView, IDisposable
 
     public string? ReadLine()
     {
-        int b = _in.ReadByte();
-        if (b < 0)
-        {
-            return null;
-        }
         var bld = new StringBuilder();
-        while (b >= 0 && b != '\n')
+        int c;
+        while (true)
         {
-            bld.Append((char)b);
-            b = _in.ReadByte();
+            c = ReadRawByte();
+            if (c < 0 || c == '\n')
+            {
+                break;
+            }
+            if (c == '\r')
+            {
+                int c2 = ReadRawByte();
+                if (c2 >= 0 && c2 != '\n')
+                {
+                    _pushback = c2;
+                }
+                break;
+            }
+            bld.Append((char)c);
         }
-        if (bld.Length > 0 && bld[^1] == '\r')
-        {
-            bld.Length -= 1;
-        }
-        return bld.ToString();
+        return c < 0 && bld.Length == 0 ? null : bld.ToString();
     }
 
     public string ReadUTF()
@@ -169,8 +182,51 @@ public class DataInputViewStreamWrapper : IDataInputView, IDisposable
         return record;
     }
 
-    public int Read(byte[] b, int off, int len) =>
-        _in.Read(b, off, len) is var read && read == 0 && len > 0 ? -1 : read;
+    public int Read(byte[] b, int off, int len)
+    {
+        ArgumentNullException.ThrowIfNull(b);
+        Span<byte> target = b.AsSpan(off, len);
+        if (target.IsEmpty)
+        {
+            return 0;
+        }
+        int pushedBack = 0;
+        if (_pushback >= 0)
+        {
+            target[0] = (byte)_pushback;
+            _pushback = -1;
+            pushedBack = 1;
+            target = target[1..];
+            if (target.IsEmpty)
+            {
+                return 1;
+            }
+        }
+        int read = _in.Read(target);
+        return read == 0 ? (pushedBack == 0 ? -1 : pushedBack) : pushedBack + read;
+    }
 
     public int Read(byte[] b) => Read(b, 0, b.Length);
+
+    private int ReadRawByte()
+    {
+        if (_pushback < 0)
+        {
+            return _in.ReadByte();
+        }
+        int b = _pushback;
+        _pushback = -1;
+        return b;
+    }
+
+    private void ReadExactly(Span<byte> buffer)
+    {
+        if (!buffer.IsEmpty && _pushback >= 0)
+        {
+            buffer[0] = (byte)_pushback;
+            _pushback = -1;
+            buffer = buffer[1..];
+        }
+        _in.ReadExactly(buffer);
+    }
 }

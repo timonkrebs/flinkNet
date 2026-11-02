@@ -72,8 +72,10 @@ public interface IDataInputView
     double ReadDouble();
 
     /// <summary>
-    /// Reads the next line of text (terminated by '\n', with a trailing '\r' trimmed), or null if
-    /// no data is available.
+    /// Reads the next line of text, or null if no data is available. As in Java, the terminators
+    /// depend on the implementation: <see cref="DataInputViewStreamWrapper"/> ends a line at LF,
+    /// CR or CRLF (Java's <c>DataInputStream</c>), while <see cref="DataInputDeserializer"/> ends
+    /// it at LF only and trims one trailing CR.
     /// </summary>
     string? ReadLine();
 
