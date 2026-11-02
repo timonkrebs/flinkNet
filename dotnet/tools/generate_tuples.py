@@ -174,11 +174,6 @@ public abstract class Tuple
     ];
 
     /// <summary>
-    /// Converts the given object into a string representation by calling
-    /// <see cref="object.ToString"/> and formatting (possibly nested) arrays and <c>null</c>.
-    /// Mirrors the format of Java's <c>Arrays.deepToString</c>.
-    /// </summary>
-    /// <summary>
     /// Casts a value for <see cref="SetField{{T}}"/>. A null cannot be stored in a field of a
     /// non-nullable value type, so it is rejected with a clear error instead of an unboxing
     /// failure (see the constructor PORT NOTE of the tuple classes).
@@ -195,6 +190,11 @@ public abstract class Tuple
         return (TField?)value;
     }}
 
+    /// <summary>
+    /// Converts the given object into a string representation by calling
+    /// <see cref="object.ToString"/> and formatting (possibly nested) arrays and <c>null</c>.
+    /// Mirrors the format of Java's <c>Arrays.deepToString</c>.
+    /// </summary>
     internal static string ArrayAwareToString(object? o)
     {{
         if (o is null)
