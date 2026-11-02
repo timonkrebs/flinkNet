@@ -51,11 +51,7 @@ public static partial class YamlParserUtils
     public static IDictionary<string, object?> LoadYamlFile(string file)
     {
         using StreamReader reader = File.OpenText(file);
-        var stream = new YamlStream();
-        stream.Load(reader);
-
-        object? root =
-            stream.Documents.Count == 0 ? null : NodeToObject(stream.Documents[0].RootNode);
+        object? root = LoadSingleDocument(reader);
         if (root is null)
         {
             return new Dictionary<string, object?>();
@@ -151,13 +147,24 @@ public static partial class YamlParserUtils
     /// <summary>Parses the given YAML string and casts the result to <typeparamref name="T"/>.</summary>
     public static T? ConvertToObject<T>(string value)
     {
+        object? root = LoadSingleDocument(new StringReader(value));
+        return root is null ? default : (T?)root;
+    }
+
+    // Like snakeyaml-engine's single-document load (Load.loadFromString/InputStream): an empty
+    // stream is null, and a second document, even an empty one, is an error rather than
+    // silently dropped.
+    private static object? LoadSingleDocument(TextReader reader)
+    {
         var stream = new YamlStream();
-        stream.Load(new StringReader(value));
-        if (stream.Documents.Count == 0)
+        stream.Load(reader);
+        if (stream.Documents.Count > 1)
         {
-            return default;
+            YamlNode second = stream.Documents[1].RootNode;
+            throw new YamlException(
+                second.Start, second.End, "expected a single document in the stream");
         }
-        return (T?)NodeToObject(stream.Documents[0].RootNode);
+        return stream.Documents.Count == 0 ? null : NodeToObject(stream.Documents[0].RootNode);
     }
 
     // --------------------------------------------------------------------------------------------

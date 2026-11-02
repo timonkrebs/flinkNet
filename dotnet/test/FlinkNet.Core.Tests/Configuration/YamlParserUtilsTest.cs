@@ -31,6 +31,30 @@ public class YamlParserUtilsTest : IDisposable
 
     public void Dispose() => Directory.Delete(_tmpDir, recursive: true);
 
+    /// <summary>
+    /// Like snakeyaml-engine's single-document load, which Flink uses, a stream with a second
+    /// document (even an empty one after a trailing <c>---</c>) is rejected instead of silently
+    /// dropping it; document markers around a single document are fine (outcomes verified with
+    /// snakeyaml-engine 2.6).
+    /// </summary>
+    [Fact]
+    public void TestRejectsMultipleDocuments()
+    {
+        string confFile = Path.Combine(_tmpDir, "multi.yaml");
+        File.WriteAllText(confFile, "a: 1\n---\nb: 2\n");
+        Assert.Throws<YamlException>(() => YamlParserUtils.LoadYamlFile(confFile));
+
+        Assert.Throws<YamlException>(() => YamlParserUtils.ConvertToObject<object>("a: 1\n---\nb: 2\n"));
+        Assert.Throws<YamlException>(() => YamlParserUtils.ConvertToObject<object>("a: 1\n---\n"));
+        Assert.Throws<YamlException>(() => YamlParserUtils.ConvertToObject<object>("a: 1\n...\n---\nb: 2\n"));
+
+        var single = new Dictionary<object, object?> { { "a", 1 } };
+        Assert.Equal(single, YamlParserUtils.ConvertToObject<Dictionary<object, object?>>("---\na: 1\n"));
+        Assert.Equal(single, YamlParserUtils.ConvertToObject<Dictionary<object, object?>>("a: 1\n...\n"));
+        Assert.Null(YamlParserUtils.ConvertToObject<object>("---\n"));
+        Assert.Null(YamlParserUtils.ConvertToObject<object>(string.Empty));
+    }
+
     [Fact]
     public void TestLoadYamlFile()
     {
