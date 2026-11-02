@@ -133,4 +133,14 @@ public class Tuple2Test
         Assert.Equal("(1.0E10,NaN)", Tuple2.Of(1e10, double.NaN).ToString());
         Assert.Equal("([1.0, 2.5],-0.0)", Tuple2.Of(new[] { 1.0, 2.5 }, -0.0f).ToString());
     }
+
+    /// <summary>A self-referencing array field prints as <c>[...]</c>, as Java's
+    /// <c>Arrays.deepToString</c> does, instead of overflowing the stack.</summary>
+    [Fact]
+    public void TestToStringSurvivesSelfReferencingArrays()
+    {
+        object?[] self = new object?[1];
+        self[0] = self;
+        Assert.Equal("([[...]],1)", Tuple2.Of(self, 1).ToString());
+    }
 }

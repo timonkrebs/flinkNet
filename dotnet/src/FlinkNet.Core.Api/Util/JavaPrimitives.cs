@@ -203,11 +203,14 @@ public static class JavaPrimitives
     public static string DeepToString(object? value)
     {
         var builder = new StringBuilder();
-        AppendDeep(value, builder);
+        AppendDeep(value, builder, null);
         return builder.ToString();
     }
 
-    private static void AppendDeep(object? value, StringBuilder builder)
+    // onPath holds the arrays currently being rendered (by reference), so that an array
+    // containing itself prints the recursive reference as "[...]" like Arrays.deepToString
+    // instead of recursing until the stack overflows.
+    private static void AppendDeep(object? value, StringBuilder builder, HashSet<Array>? onPath)
     {
         switch (value)
         {
@@ -215,6 +218,13 @@ public static class JavaPrimitives
                 builder.Append("null");
                 return;
             case Array array:
+                if (onPath is not null && onPath.Contains(array))
+                {
+                    builder.Append("[...]");
+                    return;
+                }
+                onPath ??= new HashSet<Array>(ReferenceEqualityComparer.Instance);
+                onPath.Add(array);
                 builder.Append('[');
                 bool first = true;
                 foreach (object? element in array)
@@ -224,9 +234,10 @@ public static class JavaPrimitives
                         builder.Append(", ");
                     }
                     first = false;
-                    AppendDeep(element, builder);
+                    AppendDeep(element, builder, onPath);
                 }
                 builder.Append(']');
+                onPath.Remove(array);
                 return;
             case bool b:
                 builder.Append(b ? "true" : "false");

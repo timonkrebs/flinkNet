@@ -85,6 +85,32 @@ public class JavaPrimitivesTest
         Assert.Equal(-2147483648, JavaPrimitives.ObjectHashCode(-0.0));
     }
 
+    /// <summary>Like Java's <c>Arrays.deepToString</c>, an array that (indirectly) contains
+    /// itself renders the recursive reference as <c>[...]</c> instead of recursing forever,
+    /// while an array merely shared twice prints in full (outcomes verified on a JDK).</summary>
+    [Fact]
+    public void TestDeepToStringDetectsCycles()
+    {
+        object?[] self = new object?[1];
+        self[0] = self;
+        Assert.Equal("[[[...]]]", JavaPrimitives.DeepToString(new object?[] { self }));
+        Assert.Equal("[[...]]", JavaPrimitives.DeepToString(self));
+
+        object?[] outer = new object?[2];
+        object?[] inner = [outer, 1.0];
+        outer[0] = inner;
+        outer[1] = "x";
+        Assert.Equal("[[[...], 1.0], x]", JavaPrimitives.DeepToString(outer));
+
+        object?[] shared = [1];
+        Assert.Equal("[[1], [1]]", JavaPrimitives.DeepToString(new object?[] { shared, shared }));
+
+        object?[] mixed = new object?[2];
+        mixed[0] = mixed;
+        mixed[1] = new[] { 1, 2 };
+        Assert.Equal("[[...], [1, 2]]", JavaPrimitives.DeepToString(mixed));
+    }
+
     /// <summary>Every NaN collapses to the canonical bit pattern.</summary>
     [Fact]
     public void TestCanonicalNaNBits()
