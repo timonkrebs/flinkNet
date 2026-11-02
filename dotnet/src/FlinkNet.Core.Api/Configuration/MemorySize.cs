@@ -17,6 +17,7 @@
  */
 
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 using FlinkNet.Annotations;
 
@@ -164,12 +165,50 @@ public class MemorySize : IComparable<MemorySize>
             throw new ArgumentException("multiplier must be >= 0");
         }
 
-        decimal product = _bytes * (decimal)multiplier;
-        if (product > long.MaxValue)
+        // Java multiplies by BigDecimal.valueOf(multiplier): the exact value of the multiplier's
+        // shortest round-trip decimal representation. The (decimal) cast is not that: it rounds
+        // to 15 significant digits (0.9999999999999999 becomes 1), so the product is computed
+        // exactly as unscaled * 10^-scale.
+        (BigInteger unscaled, int scale) = ShortestDecimal(multiplier);
+        BigInteger product = unscaled * _bytes;
+        BigInteger max = long.MaxValue;
+        if (scale <= 0)
+        {
+            product *= BigInteger.Pow(10, -scale);
+            if (product > max)
+            {
+                throw new OverflowException("long overflow");
+            }
+            return new MemorySize((long)product);
+        }
+
+        BigInteger divisor = BigInteger.Pow(10, scale);
+        if (product > max * divisor)
         {
             throw new OverflowException("long overflow");
         }
-        return new MemorySize((long)product);
+        // non-negative, so truncation is floor division, like BigDecimal.longValue()
+        return new MemorySize((long)(product / divisor));
+    }
+
+    // The digits and scale of Java's Double.toString(value) (JDK 19+, which prints the shortest
+    // decimal that round-trips, as .NET's "R" format does). Java's BigDecimal.valueOf rejects
+    // NaN and infinity with a NumberFormatException.
+    private static (BigInteger Unscaled, int Scale) ShortestDecimal(double value)
+    {
+        if (!double.IsFinite(value))
+        {
+            throw new FormatException("Infinite or NaN multiplier: " + value);
+        }
+        string repr = value.ToString("R", CultureInfo.InvariantCulture);
+        int exponentAt = repr.IndexOfAny(['E', 'e']);
+        int exponent = exponentAt < 0 ? 0 : int.Parse(repr.AsSpan(exponentAt + 1), CultureInfo.InvariantCulture);
+        string mantissa = exponentAt < 0 ? repr : repr[..exponentAt];
+        int point = mantissa.IndexOf('.');
+        int fractionDigits = point < 0 ? 0 : mantissa.Length - point - 1;
+        string digits = point < 0 ? mantissa : mantissa.Remove(point, 1);
+        return (BigInteger.Parse(digits, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture),
+            fractionDigits - exponent);
     }
 
     public MemorySize Divide(long by)

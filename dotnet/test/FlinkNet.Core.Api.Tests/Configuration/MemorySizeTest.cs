@@ -220,6 +220,35 @@ public class MemorySizeTest
         Assert.Throws<ArgumentException>(() => memory.Divide(-23L));
     }
 
+    /// <summary>Java multiplies by <c>BigDecimal.valueOf(multiplier)</c>, the exact value of
+    /// the multiplier's shortest decimal representation, and truncates the product (outcomes
+    /// verified on a JDK).</summary>
+    [Fact]
+    public void TestMultiplyLikeJavaBigDecimal()
+    {
+        Assert.Equal(new MemorySize(0L), new MemorySize(1L).Multiply(0.9999999999999999));
+        Assert.Equal(new MemorySize(29L), new MemorySize(100L).Multiply(0.29));
+        Assert.Equal(new MemorySize(0L), new MemorySize(0L).Multiply(1e300));
+        Assert.Equal(new MemorySize(0L), new MemorySize(123456789L).Multiply(1e-30));
+        Assert.Equal(new MemorySize(long.MaxValue), new MemorySize(long.MaxValue).Multiply(1.0));
+        Assert.Equal(
+            new MemorySize(1234567890123456L),
+            new MemorySize(10000000000000000L).Multiply(0.123456789012345678));
+    }
+
+    [Fact]
+    public void TestMultiplyOverflowAndInvalidMultipliers()
+    {
+        Assert.Throws<OverflowException>(() => new MemorySize(1L).Multiply(1e300));
+        Assert.Throws<OverflowException>(() => new MemorySize(long.MaxValue).Multiply(1.0000000000000002));
+        Assert.Throws<OverflowException>(() => new MemorySize(long.MaxValue / 2 + 1).Multiply(2.0));
+        Assert.Throws<OverflowException>(() => new MemorySize(3L).Multiply(1.5e20));
+        Assert.Throws<ArgumentException>(() => new MemorySize(1L).Multiply(-1.0));
+        // BigDecimal.valueOf rejects NaN and infinity with a NumberFormatException
+        Assert.Throws<FormatException>(() => new MemorySize(1L).Multiply(double.NaN));
+        Assert.Throws<FormatException>(() => new MemorySize(1L).Multiply(double.PositiveInfinity));
+    }
+
     [Fact]
     public void TestToHumanReadableString()
     {
